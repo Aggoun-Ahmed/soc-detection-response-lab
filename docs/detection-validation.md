@@ -41,6 +41,8 @@ The following observations were made in the local Wazuh 4.14.10 lab on **7–8 N
 
 | Phase 5: read-only live Docker → Python correlation via native CMD pipe | One sanitized finding from real `100133` + `100134` alerts | 1 finding; `delta_seconds=0.189`; matching agent and ProcessGuid; complete local suite 37/37 | PASS — controlled live test, not persistence/recovery | [Phase 5 README](../README.md#phase-5--read-only-incremental-monitoring-live-test-validated) |
 
+| Phase 5: checkpoint restart and replay (synthetic manual test) | First run holds `100133`; after restart, appended `100134` produces one finding; unchanged replay produces zero | Run 1: no output; Run 2: one finding, 0.197 s; Run 3: no output | PASS — controlled snapshot recovery only | [Checkpoint prototype](../tools/phase5_checkpoint.py) |
+
 **Phase 2 screenshot disclosure:** No screenshots are included for Phase 2 because the real Windows and Wazuh views contained personal system identifiers. The linked INC-003 report uses selected, sanitized, reconstructed alert fields instead; these are not raw evidence exports.
 
 **Phase 3 screenshot disclosure:** The four custom rule matches were confirmed in the dashboard; unredacted images were intentionally omitted because they contain personal device and account identifiers. Only selected validation fields are documented.
