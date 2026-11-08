@@ -1,14 +1,14 @@
 # SOC Detection & Incident Response Lab
 
-**A defensive cybersecurity portfolio project** built around Wazuh SIEM, synthetic security telemetry, reproducible detection rules, and analyst-style investigations.
+**A defensive cybersecurity portfolio project** built around Wazuh SIEM, Windows endpoint telemetry, safe synthetic test data, reproducible detection rules, and analyst-style investigations.
 
-> **Status: Live Wazuh detection validated (7 November 2026).** Both scenarios triggered custom rules in Wazuh 4.14.10 and produced indexed alerts visible in the Threat Hunting dashboard. Tests use deliberately **synthetic JSON telemetry**, collected locally by the Wazuh manager (`agent.id: 000`); no actual Windows endpoint agent, malicious execution, or real compromise is claimed.
+> **Status: Two validated lab phases (7–8 November 2026).** Phase 1 verified manager-local synthetic JSON detections. Phase 2 verified **real Windows Security EventChannel telemetry** from an active Wazuh endpoint agent (`001`) and a custom five-event failed-logon correlation (`100120`, level 10). All authentication failures were deliberately induced against a nonexistent test username; no real attack or compromise occurred.
 
 ## Why this project exists
 
-This project demonstrates a realistic, limited SOC workflow: ingest logs → identify suspicious behavior → validate alerts → investigate → document conclusions and limitations. It uses **harmless, synthetic events**; it does not carry out attacks or execute malware.
+This project demonstrates a realistic, limited SOC workflow: ingest logs → identify suspicious behavior → validate alerts → investigate → document conclusions and limitations. It uses **harmless synthetic JSON test records** in Phase 1 and **controlled, real Windows Security events** in Phase 2; it does not carry out attacks or execute malware.
 
-## Verified detection results
+## Phase 1 — Verified synthetic detection results
 
 Tested on **7 November 2026** using the official Wazuh **4.14.10** single-node Docker stack on Windows + Docker Desktop/WSL2. Events were injected as synthetic JSON lines into `/var/ossec/logs/lab-events.jsonl`. Wazuh decoded, correlated where applicable, and indexed the corresponding alerts.
 
@@ -37,6 +37,36 @@ The observed synthetic authentication events referenced `demo_user` and `demo-wi
 
 **Scope and limitations:** These results verify synthetic log collection, JSON decoding, rule evaluation, frequency correlation, alert indexing, and dashboard visibility. They do **not** validate authentication against a real service, Windows endpoint telemetry, real PowerShell execution, incident containment, or a real-world compromise. ATT&CK mappings are hypotheses for detection coverage, not evidence of a completed attack.
 
+## Phase 2 — Real Windows endpoint detection (validated 8 November 2026)
+
+A Windows 11 endpoint running Wazuh agent **`001`** (`soc-win-endpoint`) was enrolled against the same Docker-hosted Wazuh manager. The endpoint collected real **Windows EventChannel** logs; unlike Phase 1, no fabricated JSON security events were injected.
+
+| Verified test | Observed rule | Level | Evidence |
+| --- | --- | --- | --- |
+| Controlled Windows Application error (Event ID `777`) | `60602` | 9 | Wazuh received and alerted on the genuine Application-channel event |
+| One deliberately failed local Windows logon (Security Event ID `4625`) | `60122` | 5 | Built-in failed-logon alert visible for agent `001` |
+| **Five failed local logons for the same nonexistent username within 60 seconds** | **Custom `100120`** | **10** | **Frequency-5 correlation alert verified in dashboard and manager alerts; triggered on two test runs** |
+
+The failed-logon tests called the Windows `LogonUser` API with the **nonexistent** `SOC_LAB_NONEXISTENT` account and an intentionally fake password. Windows recorded authentic Security Event ID `4625` events (interactive logon type `2`, unknown-user substatus `0xC0000064`). Wazuh decoded these via `windows_eventchannel`; its built-in rule `60122` generated level-5 alerts. Our `100120` rule correlated the failures for the same **target username**, mapped to **MITRE ATT&CK T1110 — Brute Force**.
+
+- **Custom detection rule:** [`rules/windows_auth_rules.xml`](rules/windows_auth_rules.xml)
+- **Investigation and sanitized evidence:** [INC-003 — Windows failed-logon correlation](investigations/INC-003-windows-authentication.md)
+- **Observed correlated alerts:** 2026-11-08 17:48:55 CET and 17:50:28 CET (16:48:55 and 16:50:28 UTC).
+
+**Scope:** This confirms true Windows-to-agent-to-SIEM detection and five-event correlation in a controlled environment, **not** a real brute-force attack. The test did not involve a remote source IP, real compromised account, malicious PowerShell, or actual adversary activity. Additional negative tests and tuning are required before production use.
+
+### Phase 2 architecture
+
+```mermaid
+flowchart LR
+  W[Windows 11 Security EventChannel] --> A[Wazuh Agent 001]
+  A --> M[Docker Wazuh Manager]
+  R[Windows correlation rule 100120] --> M
+  M --> I[Wazuh Indexer]
+  I --> D[Threat Hunting Dashboard]
+  D --> N[INC-003 investigation]
+```
+
 ## Architecture
 
 ```mermaid
@@ -49,7 +79,7 @@ flowchart LR
   C --> G[Analyst investigation notes]
 ```
 
-The Docker stack is supplied by the **official Wazuh project**, cloned locally (not vendored into this repository). Your own work consists of detection rules, test cases, deployment helper scripts, and analyst documentation.
+The Docker stack is supplied by the **official Wazuh project**, cloned locally (not vendored into this repository). Phase 1 uses manager-local synthetic records; Phase 2 uses a Windows host agent and real EventChannel records. Your own work consists of detection rules, test cases, deployment helper scripts, and analyst documentation.
 
 ## Requirements (Windows 10/11)
 
@@ -142,11 +172,11 @@ Avoid `docker compose down -v` unless you intentionally want to permanently dele
 
 ## Validation evidence and next improvements
 
-**Completed:** Both custom scenarios passed the real Wazuh pipeline and are documented with dashboard screenshots and incident write-ups above. The earlier offline Python reference analyzer and unit tests provide additional checks, but are not substitutes for SIEM integration validation.
+**Completed:** Both Phase 1 custom scenarios passed the Wazuh pipeline, and Phase 2 confirmed real Windows EventChannel ingestion plus custom five-event correlation. The findings are documented in the investigation reports linked above. The earlier offline Python reference analyzer and unit tests provide additional checks, but are not substitutes for SIEM integration validation.
 
 **Next validation work:**
 1. Test negative cases (unrelated JSON events and distinct source IPs) and update [the validation matrix](docs/detection-validation.md), which still contains a **pre-integration checklist**.
-2. Deploy a Wazuh agent on an isolated Windows endpoint to collect real Windows event telemetry instead of manager-local synthetic JSON.
+2. Move the existing Windows endpoint tests into an isolated lab VM, and expand coverage to network authentication with source attribution.
 3. Tune rule conditions and thresholds against representative benign activity and document false positives.
 4. Add sanitized alert JSON excerpts and repeatable evidence-capture steps.
 
@@ -165,7 +195,9 @@ Do **not** commit credentials, generated certificates, actual corporate logs or 
 - [`docs/detection-validation.md`](docs/detection-validation.md): validation checklist (historical checklist; not yet updated with these observed results).
 - [`investigations/INC-001-brute-force-simulation.md`](investigations/INC-001-brute-force-simulation.md): authentication-correlation case study.
 - [`investigations/INC-002-powershell-simulation.md`](investigations/INC-002-powershell-simulation.md): suspicious PowerShell telemetry case study.
-- [`screenshots/`](screenshots/): Wazuh Threat Hunting evidence.
+- [`screenshots/`](screenshots/): Wazuh Threat Hunting evidence from Phase 1.
+- [`rules/windows_auth_rules.xml`](rules/windows_auth_rules.xml): validated Phase 2 Windows Event ID 4625 correlation rule.
+- [`investigations/INC-003-windows-authentication.md`](investigations/INC-003-windows-authentication.md): Phase 2 investigation and sanitized detection evidence.
 
 ## References
 
