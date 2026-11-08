@@ -5,13 +5,7 @@
     <field name="win.eventdata.image" type="pcre2">(?i)\\notepad\.exe$</field>
     <description>SOC LAB: Notepad process creation detected via Sysmon</description>
     <group>soc_lab,sysmon_test,
-  <!-- High-priority controlled test: all three flags must be present. -->
-  <rule id="100133" level="10">
-    <if_sid>100132</if_sid>
-    <field name="win.eventdata.commandLine" type="pcre2">(?i)(?=.*\s-(?:noprofile|nop)\b)(?=.*\s-(?:noninteractive|noni)\b)</field>
-    <description>SOC LAB: PowerShell encoded command with noninteractive and no-profile flags</description>
-    <group>soc_lab,powershell_flag_combination,</group>
-  </rule>
+</group>
 </group>
   </rule>
 
@@ -31,4 +25,12 @@
     <description>SOC LAB: PowerShell encoded command execution detected</description>
     <group>soc_lab,powershell_encoded,</group>
   </rule>
+  <!-- High-priority controlled test: all three flags must be present. -->
+  <rule id="100133" level="10">
+    <if_sid>100132</if_sid>
+    <field name="win.eventdata.commandLine" type="pcre2">(?i)(?=.*\s-(?:noprofile|nop)\b)(?=.*\s-(?:noninteractive|noni)\b)</field>
+    <description>SOC LAB: PowerShell encoded command with noninteractive and no-profile flags</description>
+    <group>soc_lab,powershell_flag_combination,</group>
+  </rule>
+
 </group>
