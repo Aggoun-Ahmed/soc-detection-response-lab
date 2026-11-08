@@ -56,6 +56,16 @@ These results show useful distinctions among process contexts and rule condition
 
 Three additional harmless PowerShell runs were initiated: (A) `powershell.exe -NoProfile -Command "Get-Date"`, (B) `cmd.exe /c` launching PowerShell to print `SOC_LAB_BASELINE`, and (C) the same CMD-parent test adding `-NonInteractive`. The lab operator reports that a time-scoped Wazuh Threat Hunting search for `rule.id: (100132 or 100133 or 92057)` across these tests returned **0 hits**. **Result: PASS for this limited benign baseline**, with no alerts from the three selected higher-priority rules. Event-by-event Sysmon correlation was not repeated for these specific runs, and these results do not establish a production false-positive rate.
 
+## Benign encoded administrative automation — alert review
+
+At **2026-11-08 22:52:41 CET** (Sysmon event time; Wazuh alert indexed approximately **22:52:42 CET**), a controlled administrative command using `powershell.exe -NoProfile -NonInteractive -EncodedCommand` was recorded as Sysmon Event ID `1`. Its immediate parent was `cmd.exe`. Wazuh generated custom rule **`100133` (level 10, `rule.firedtimes: 2`)**.
+
+The UTF-16LE Base64 payload corresponds to `Get-Date; [Environment]::OSVersion.Version.ToString()`, which reads the date and operating-system version. This was intentionally initiated as a harmless lab simulation, **not evidence of malicious behavior**. The event verifies the invocation and rule match; it does not independently verify command completion or represent a real scheduled task.
+
+**Triage:** true positive for the defined command-line signature; **benign known test** for the underlying activity. In ordinary SOC operations this would be an alert requiring contextual triage, not automatically a security incident. The test demonstrates that rule `100133` can alert on authorized administrative-style activity. This supports revisiting the level-10 priority using actual organizational baselines, parent process context, and corroborating telemetry; it does not by itself justify a broad allowlist or automatic suppression.
+
+**Tuning decision:** leave the deployed rule unchanged for now. Next, compare a narrowly scoped known-benign test against broader risky activity before designing any exception or priority adjustment.
+
 ## Privacy and evidence handling
 
 The original Wazuh event contains private user, host, path, process and logon identifiers. Only manually selected sanitized fields and process basenames are published in this report; no original screenshots, full events, or personal identifiers are included.
