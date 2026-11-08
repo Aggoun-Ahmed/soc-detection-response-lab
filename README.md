@@ -144,7 +144,7 @@ The checkpoint CLI now acquires a **non-blocking operating-system file lock** on
 
 The lock uses Windows byte-range locking (`msvcrt`) on Windows and `flock` on POSIX. It protects **cooperating CLI users on a local filesystem**; code that directly instantiates `SnapshotCheckpoint` without acquiring the lock is **not guarded**. It is not a distributed lock, and network filesystem behavior has not been validated.
 
-Three [cross-process regression tests](tests/test_checkpoint_lock.py) check contention, release/reacquisition, and abnormal process exit. **Expected local suite: 53 tests (previous 50 plus 3), pending verification.**
+Three [cross-process regression tests](tests/test_checkpoint_lock.py) check contention, release/reacquisition, and abnormal process exit. **Verified locally: 53/53 tests passed, 0 failures, in 0.168 seconds.** Manual two-terminal contention validation remains pending.
 
 ## Architecture
 
