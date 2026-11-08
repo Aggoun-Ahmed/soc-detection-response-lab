@@ -17,14 +17,14 @@
 ## Release gates
 
 - [x] Final local regression re-run reported: **59/59 PASS**, 0 failures, 0.197 seconds (local confirmation; final Git HEAD should still be synchronized)
-- [ ] **Screenshot privacy:** user supplied all three Phase 1 screenshots and they were visually reviewed. `powershell-alert.png` and `brute-force-alert.png` show synthetic identifiers and no visible personal system details. `detection-overview.png` shows a long numeric value next to the top-bar `API` selector (`1513629884013`) that could identify an environment; **mask that region and replace the public image before tagging**. Recheck the final image after replacement.
+- [x] **Screenshot privacy:** all three Phase 1 screenshots visually reviewed; the overview's API selector identifier was redacted and the user pushed the replacement in commit `4807ca3`. GitHub tree confirms the public overview blob changed (original `b4adddc5` → replacement `515ac693`). Reopen the published screenshot visually once more as a final sign-off.
 - [ ] Run a local source scan, including **Git history if any sensitive information was ever committed**; `.gitignore` prevents new accidents but does not scrub old commits
 - [ ] Check README commands and Markdown links after cleanup
-- [x] GitHub Actions Python tests **success** for release-readiness commit `0196549` ([run](https://github.com/Aggoun-Ahmed/soc-detection-response-lab/actions/runs/42534076532)); check CI again if release changes follow
+- [x] GitHub Actions Python tests **success** on screenshot replacement commit `4807ca3` ([run](https://github.com/Aggoun-Ahmed/soc-detection-response-lab/actions/runs/42534720868)); rerun after any subsequent documentation commit
 - [ ] Create `v1.0.0` tag/release only after the above pass
 
 ## Honest scope statement
 
 This repository is a **portfolio-scale controlled lab**, not a production SIEM integration or proof of a real attack. The live stdin monitor and the separately checkpointed snapshot CLI are not a combined unattended service. Log rotation recovery is operator-assisted and requires complete ordered retained history. There is no automatic containment, guaranteed exactly-once external notification, long-term throughput benchmark, or production false-positive assessment.
 
-Phase 2–4 raw Windows log exports and unredacted screenshots were intentionally withheld to avoid sharing endpoint identifiers. Synthetic Phase 1 screenshots are separate assets and still require visual privacy inspection.
+Phase 2–4 raw Windows log exports and unredacted screenshots were intentionally withheld to avoid sharing endpoint identifiers. Synthetic Phase 1 screenshots were visually inspected, and the dashboard overview was replaced with a redacted version. As with any Git change, older binary versions can remain in repository history.
