@@ -30,7 +30,8 @@ The following observations were made in the local Wazuh 4.14.10 lab on **7–8 N
 | Phase 2 fewer than five Windows failures in the window | No custom frequency alert from an isolated sequence | NOT RUN |
 | Phase 2 Windows remote/network logon types and source-IP attribution | Correct event capture and rule behavior | NOT RUN |
 | Phase 3 PowerShell marker absent from command line | No `100131` marker alert | NOT RUN |
-| Phase 3 encoded-command negative controls and variants | No false marker matches; assess command-line variations | NOT RUN |
+| Phase 3 ordinary PowerShell negative controls (Write-Output, Get-Date, script block) | No `100132` alert for the three process launches | PARTIAL — three Sysmon Event ID 1 records and corresponding Wazuh `92027` (level 4) alerts observed; targeted absence check pending |
+| Phase 3 encoded-command switch variants | Assess command-line variations | NOT RUN |
 | Phase 3 additional suspicious PowerShell behaviors | Alerts for safe controlled indicators | NOT RUN |
 
 ## Reproduce Phase 2 (safe test)
