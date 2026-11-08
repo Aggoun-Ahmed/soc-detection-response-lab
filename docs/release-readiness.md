@@ -1,6 +1,6 @@
 # v1.0.0 Release Readiness Checklist
 
-**Status:** Release candidate; do not publish a final tag until the remaining privacy and local verification checks are complete.
+**Status:** Release candidate approved for tagging after final synchronization and CI verification. Continue to distinguish the bounded privacy scan from a full historical secrets audit.
 
 ## Verified functionality
 
@@ -18,8 +18,8 @@
 
 - [x] Final local regression re-run reported: **59/59 PASS**, 0 failures, 0.197 seconds (local confirmation; final Git HEAD should still be synchronized)
 - [x] **Screenshot privacy:** all three Phase 1 screenshots visually reviewed; the overview's API selector identifier was redacted and the user pushed the replacement in commit `4807ca3`. GitHub tree confirms the public overview blob changed (original `b4adddc5` → replacement `515ac693`). Reopen the published screenshot visually once more as a final sign-off.
-- [ ] Run a local source scan, including **Git history if any sensitive information was ever committed**; `.gitignore` prevents new accidents but does not scrub old commits
-- [ ] Check README commands and Markdown links after cleanup
+- [x] Local tracked-text scan: only expected author attribution in `LICENSE` and GitHub username in a public CI URL matched; no personal host paths or obvious listed credential patterns. Git history check for `.env`, `*.key`, `*.pem`, `*.p12`, `*.pfx` returned no commits. **Limited checks only:** not a complete audit of historical content or binary artifacts; `.gitignore` does not scrub historical objects.
+- [x] README relative-link target check: 42 local links checked against current Git tree; paths resolved to tracked files or existing `tests/` and `screenshots/` directories. Commands remain documented examples, not all independently replayed on a fresh machine.
 - [x] GitHub Actions Python tests **success** on screenshot replacement commit `4807ca3` ([run](https://github.com/Aggoun-Ahmed/soc-detection-response-lab/actions/runs/42534720868)); rerun after any subsequent documentation commit
 - [ ] Create `v1.0.0` tag/release only after the above pass
 
