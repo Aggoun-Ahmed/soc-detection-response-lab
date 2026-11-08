@@ -55,6 +55,10 @@ The failed-logon tests called the Windows `LogonUser` API with the **nonexistent
 
 **Scope:** This confirms true Windows-to-agent-to-SIEM detection and five-event correlation in a controlled environment, **not** a real brute-force attack. The test did not involve a remote source IP, real compromised account, malicious PowerShell, or actual adversary activity. Additional negative tests and tuning are required before production use.
 
+### Phase 2 screenshot and privacy note
+
+**No Phase 2 screenshots are published.** Unlike the synthetic Phase 1 evidence, the real Windows EventChannel and Wazuh dashboard views contained personal system identifiers (such as hostnames, Windows account names, SIDs, and logon identifiers). To avoid exposing information from the personal test system, those screenshots were intentionally omitted. Instead, [INC-003](investigations/INC-003-windows-authentication.md) documents the observed rule IDs, timestamps, validation steps, and a **sanitized, reconstructed alert excerpt**; that excerpt is not represented as an unmodified raw event. The absence of screenshots is a privacy precaution, not a claim of additional validation.
+
 ### Phase 2 architecture
 
 ```mermaid
