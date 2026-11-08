@@ -6,6 +6,7 @@ a continuously running monitor, and it never sends data over the network.
 """
 import argparse
 import base64
+import gzip
 import hashlib
 import hmac
 import json
@@ -117,42 +118,70 @@ class SnapshotCheckpoint:
             "timestamp": alert.get("timestamp"),
         }
 
+    @staticmethod
+    def _read_segments(paths):
+        """Yield raw lines from ordered retained segments, including .gz archives."""
+        for path in paths:
+            file_path = Path(path)
+            opener = gzip.open if file_path.suffix.lower() == ".gz" else open
+            with opener(file_path, "rb") as handle:
+                for line in handle:
+                    if not line.endswith(b"\\n"):
+                        raise ValueError("incomplete last line in a log segment")
+                    yield line
+
     def process(self, input_path):
-        """Return sanitized findings. Refuse rotated/truncated/changed prefixes."""
-        findings = []
-        old_lines = self.lines
-        old_digest = self.digest
-        rolling = ZERO_HASH
+        """Original single-file snapshot interface; retains existing semantics."""
+        return self.process_segments([input_path])
+
+    def process_segments(self, paths):
+        """Continue through ordered complete segments after verifying past prefix.
+
+        All retained old lines must appear verbatim, in order. Missing or modified
+        earlier segments fail closed. This is NOT automatic Wazuh rotation discovery.
+        """
+        paths = list(paths)
+        if not paths:
+            raise ValueError("at least one input segment is required")
+        resolved = [str(Path(p).resolve()) for p in paths]
+        if len(set(resolved)) != len(resolved):
+            raise ValueError("duplicate input segment path")
+        # Validate full input before committing any new cursor, finding, or state.
         count = 0
-        verified = old_lines == 0
-        with Path(input_path).open("rb") as handle:
-            for line in handle:
-                if not line.endswith(b"\n"):
-                    raise ValueError("incomplete last line; retry after log finishes writing")
+        rolling = ZERO_HASH
+        verified = self.lines == 0
+        for line in self._read_segments(paths):
+            count += 1
+            if count <= self.lines:
                 rolling = hashlib.sha256(bytes.fromhex(rolling) + line).hexdigest()
-                count += 1
-                if count <= old_lines:
-                    if count == old_lines:
-                        if rolling != old_digest:
-                            raise RuntimeError("alert source changed or rotated; refusing checkpoint reuse")
-                        verified = True
-                    continue
-                alert = None
-                try:
-                    alert = json.loads(line)
-                except (ValueError, UnicodeError):
-                    pass
-                batch = self.engine.ingest(self._pseudonymize(alert))
-                self.lines = count
-                self.digest = rolling
-                for finding in batch:
-                    self.pending.append({"id": self.next_finding_id, "finding": finding})
-                    self.next_finding_id += 1
-                # Cursor, correlation state and outbox commit in the same atomic file replace.
-                self._write()
-                findings.extend(batch)
+                if count == self.lines:
+                    if rolling != self.digest:
+                        raise RuntimeError("historical alert prefix changed, missing, or reordered; refusing replay")
+                    verified = True
         if not verified:
-            raise RuntimeError("alert source truncated; refusing checkpoint reuse")
+            raise RuntimeError("historical alert prefix missing or truncated; refusing replay")
+
+        # A second pass verifies the old prefix again, limiting TOCTOU risks.
+        findings = []
+        rolling = ZERO_HASH
+        for index, line in enumerate(self._read_segments(paths), start=1):
+            rolling = hashlib.sha256(bytes.fromhex(rolling) + line).hexdigest()
+            if index <= self.lines:
+                if index == self.lines and rolling != self.digest:
+                    raise RuntimeError("log segment changed during processing; refusing replay")
+                continue
+            try:
+                alert = json.loads(line)
+            except (ValueError, UnicodeError):
+                alert = None
+            batch = self.engine.ingest(self._pseudonymize(alert))
+            self.lines = index
+            self.digest = rolling
+            for finding in batch:
+                self.pending.append({"id": self.next_finding_id, "finding": finding})
+                self.next_finding_id += 1
+            self._write()
+            findings.extend(batch)
         return findings
 
     def pending_findings(self):
@@ -171,16 +200,19 @@ class SnapshotCheckpoint:
 
 def main():
     parser = argparse.ArgumentParser(description="Read-only checkpointed Wazuh snapshot replay")
-    parser.add_argument("--input", help="Local append-only JSONL snapshot (sensitive)")
+    sources = parser.add_mutually_exclusive_group()
+    sources.add_argument("--input", help="Single local append-only JSONL snapshot (sensitive)")
+    sources.add_argument("--segments", nargs="+", metavar="FILE",
+                         help="Oldest-to-newest complete JSONL or .gz segments; retain all history")
     parser.add_argument("--state", required=True, help="Local checkpoint path, outside Git repo")
     options = parser.add_mutually_exclusive_group()
     options.add_argument("--pending", action="store_true", help="List unacknowledged findings")
     options.add_argument("--ack", type=int, metavar="ID", help="Acknowledge one displayed finding ID")
     args = parser.parse_args()
-    if not (args.input or args.pending or args.ack is not None):
-        parser.error("--input or --pending or --ack is required")
-    if args.input and (args.pending or args.ack is not None):
-        parser.error("--input cannot be combined with --pending or --ack")
+    if not (args.input or args.segments or args.pending or args.ack is not None):
+        parser.error("--input, --segments, --pending or --ack is required")
+    if (args.input or args.segments) and (args.pending or args.ack is not None):
+        parser.error("input sources cannot be combined with --pending or --ack")
     # Hold the lock throughout load, modify, commit and presentation.
     with checkpoint_lock(args.state):
         worker = SnapshotCheckpoint(args.state)
@@ -189,6 +221,8 @@ def main():
             return
         if args.input:
             worker.process(args.input)
+        elif args.segments:
+            worker.process_segments(args.segments)
         for item in worker.pending_findings():
             print(json.dumps(item), flush=True)
 
