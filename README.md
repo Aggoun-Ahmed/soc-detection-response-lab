@@ -112,13 +112,13 @@ cmd.exe /d /c "docker exec single-node-wazuh.manager-1 tail -n 0 -F /var/ossec/l
 
 **Live validation:** Wazuh indexed rules `100133` and `100134` for a harmless test; the streaming monitor generated **one sanitized finding** with `delta_seconds: 0.189`, `guid_match: true`, and `agent_match: true`. Direct piping with Windows PowerShell had shown no findings; using `cmd.exe` to host the native Docker→Python pipe successfully delivered live events. Restart recovery, persistent checkpoints and long-running reliability remain untested.
 
-### Step 3 — Restart-safe snapshot replay prototype (not yet validated locally)
+### Step 3 — Restart-safe snapshot replay prototype (controlled test passed)
 
 The [checkpoint prototype](tools/phase5_checkpoint.py) reads a **local snapshot** of Wazuh `alerts.json`, replays an append-only log from the beginning, verifies its prior prefix against a rolling SHA-256 digest, and atomically writes progress and pseudonymized correlation state to a separate checkpoint. It fails closed if the source is truncated or a previously processed line changes. Raw usernames, hostnames, GUIDs, and commands are **not saved in the checkpoint**; only a secret key and HMAC-pseudonymized agent/process identities remain. Seven [recovery tests](tests/test_phase5_checkpoint.py) cover restart, changed/truncated logs, incomplete lines, sensitive data, checkpoint versions, and duplicate replay.
 
 This is a **bounded snapshot-recovery prototype, not a production tailer or guaranteed exactly-once notification system**: it does not follow new file writes, recover after Wazuh rotation, lock against concurrent monitor processes, or make console printing atomic with checkpoint commits. If interrupted after checkpointing but before printing, a finding may be lost from console output. A local snapshot includes sensitive raw alerts and must remain outside the public Git repository. For a controlled test, use a sanitized test fixture rather than exporting your raw logs.
 
-To validate code and tests, synchronize GitHub and run `py -3 -m unittest discover -s tests -v`. The local test suite completed successfully on **8 November 2026: 44/44 tests PASS, 0 failures, in 0.042 seconds** (37 existing + 7 checkpoint tests). This validates unit-test scenarios, not production recovery behavior.
+To validate code and tests, synchronize GitHub and run `py -3 -m unittest discover -s tests -v`. The local test suite completed successfully on **8 November 2026: 44/44 tests PASS, 0 failures, in 0.042 seconds** (37 existing + 7 checkpoint tests). The operator also completed a manual three-run synthetic restart test: the first run saved a pending `100133` event with no output; a second run restored the checkpoint and correlated a newly appended `100134` event into **one sanitized finding** (`delta_seconds: 0.197`); a third replay of the unchanged source emitted **zero duplicate findings**. **PASS — controlled snapshot checkpoint/restart behavior**, not production crash recovery.
 
 ## Architecture
 
