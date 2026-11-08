@@ -16,11 +16,11 @@
 
 ## Release gates
 
-- [ ] Pull final documentation commits; rerun `py -3 -m unittest discover -s tests -v`
+- [x] Final local regression re-run reported: **59/59 PASS**, 0 failures, 0.197 seconds (local confirmation; final Git HEAD should still be synchronized)
 - [ ] Inspect **all three existing Phase 1 screenshots** visually for personal names, machine names, user folders, IPs, tokens, URLs or open browser profile details; redact or remove before tagging
 - [ ] Run a local source scan, including **Git history if any sensitive information was ever committed**; `.gitignore` prevents new accidents but does not scrub old commits
 - [ ] Check README commands and Markdown links after cleanup
-- [ ] Confirm GitHub Actions CI result for the final commit
+- [x] GitHub Actions Python tests **success** for release-readiness commit `0196549` ([run](https://github.com/Aggoun-Ahmed/soc-detection-response-lab/actions/runs/42534076532)); check CI again if release changes follow
 - [ ] Create `v1.0.0` tag/release only after the above pass
 
 ## Honest scope statement
