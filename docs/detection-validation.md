@@ -16,7 +16,7 @@ The following observations were made in the local Wazuh 4.14.10 lab on **7–8 N
 | Phase 3: PowerShell marker process creation (Event ID 1) | Windows Sysmon / agent `001` | `100131` | `100131` (level 5) | PASS | [Phase 3 README](../README.md#phase-3--sysmon-endpoint-telemetry-initial-validation-8-november-2026) |
 | Phase 3: PowerShell encoded-command indicator (Event ID 1) | Windows Sysmon / agent `001` | `100132` | `100132` (level 8); built-in `92057` observed in separate test | PASS | [INC-004](../investigations/INC-004-powershell-encoded-command.md) |
 | Phase 3: encoded, no-profile, noninteractive combination | Windows Sysmon / agent `001` | `100133` | `100133` (level 10), 2026-11-08 22:31:22 CET | PASS | [INC-004](../investigations/INC-004-powershell-encoded-command.md) |
-| Phase 3: three reduced-flag negative-control executions | Windows Sysmon / agent `001` | No new `100133` | Two `100132` (level 8) and one `92032` (level 3) visible; no new `100133` in screenshot | OBSERVED — targeted zero-hit search not yet confirmed | [INC-004](../investigations/INC-004-powershell-encoded-command.md) |
+| Phase 3: three reduced-flag negative-control executions | Windows Sysmon / agent `001` | No new `100133` | Two `100132` (level 8) and one `92032` (level 3) visible; no new `100133` in screenshot | PASS — targeted `100133` search returned 0 hits for 2026-11-08 22:32:10–22:32:35 CET | [INC-004](../investigations/INC-004-powershell-encoded-command.md) |
 
 **Phase 2 screenshot disclosure:** No screenshots are included for Phase 2 because the real Windows and Wazuh views contained personal system identifiers. The linked INC-003 report uses selected, sanitized, reconstructed alert fields instead; these are not raw evidence exports.
 
@@ -33,7 +33,7 @@ The following observations were made in the local Wazuh 4.14.10 lab on **7–8 N
 | Phase 2 Windows remote/network logon types and source-IP attribution | Correct event capture and rule behavior | NOT RUN |
 | Phase 3 PowerShell marker absent from command line | No `100131` marker alert | NOT RUN |
 | Phase 3 ordinary PowerShell negative controls (Write-Output, Get-Date, script block) | No `100132` alert for the three process launches | PASS — three Sysmon Event ID 1 records; three Wazuh `92027` (level 4) alerts; targeted `100132` search returned 0 hits for 2026-11-08 22:23:15–22:23:40 CET |
-| Phase 3 reduced-flag targeted `100133` absence check | No `100133` alert for three test executions | PENDING targeted time-scoped search |
+| Phase 3 reduced-flag targeted `100133` absence check | No `100133` alert for three test executions | PASS — 0 hits in 2026-11-08 22:32:10–22:32:35 CET (dashboard query reported by lab operator) |
 | Phase 3 encoded-command switch variants | Assess command-line variations | NOT RUN |
 | Phase 3 additional suspicious PowerShell behaviors | Alerts for safe controlled indicators | NOT RUN |
 
