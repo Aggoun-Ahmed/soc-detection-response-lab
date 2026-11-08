@@ -1,16 +1,26 @@
 <group name="soc_sysmon_lab,">
-  <!-- Safe proof-of-pipeline test: Notepad is not suspicious by itself. -->
+  <!-- Safe proof-of-pipeline test; Notepad is not suspicious by itself. -->
   <rule id="100130" level="5">
     <if_group>sysmon_event1</if_group>
     <field name="win.eventdata.image" type="pcre2">(?i)\\notepad\.exe$</field>
     <description>SOC LAB: Notepad process creation detected via Sysmon</description>
-    <group>soc_lab,sysmon_test,  <!-- Marker-based, safe PowerShell telemetry validation; not a malicious-activity signature. -->
+    <group>soc_lab,sysmon_test,</group>
+  </rule>
+
+  <!-- Safe PowerShell marker test; not a threat signature. -->
   <rule id="100131" level="5">
     <if_group>sysmon_event1</if_group>
     <field name="win.eventdata.commandLine" type="pcre2">SOC_LAB_PHASE3_TEST</field>
     <description>SOC LAB: Controlled PowerShell marker detected via Sysmon</description>
     <group>soc_lab,sysmon_test,</group>
   </rule>
-</group>
+
+  <!-- Technique indicator: encoded arguments can also occur in legitimate administration. -->
+  <rule id="100132" level="8">
+    <if_group>sysmon_event1</if_group>
+    <field name="win.eventdata.image" type="pcre2">(?i)\\(powershell|pwsh)\.exe$</field>
+    <field name="win.eventdata.commandLine" type="pcre2">(?i)\s-(?:encodedcommand|enc|e|ec)\s</field>
+    <description>SOC LAB: PowerShell encoded command execution detected</description>
+    <group>soc_lab,powershell_encoded,</group>
   </rule>
 </group>
