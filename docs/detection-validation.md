@@ -27,6 +27,8 @@ The following observations were made in the local Wazuh 4.14.10 lab on **7–8 N
 | Phase 4: Sysmon Event ID 11 and local EID 1↔11 GUID join | Correlate PowerShell ProcessCreate and FileCreate | `powershell.exe`, matching `ProcessGuid`: True; file creation 2026-11-08 22:56:06 CET | PASS | [INC-005](../investigations/INC-005-process-chain-triage.md) |
 | Phase 4: Wazuh custom FileCreate detection | New controlled FileCreate event triggers `100134` level 5 | `100134` level 5, Event ID 11, 2026-11-08 23:00:55 CET | PASS | [File rule](../rules/sysmon_file_rules.xml) |
 
+| Phase 4: SIEM-side analyst correlation across Sysmon Event IDs 1 and 11 | Match ProcessGuid for process creation and controlled file write | Wazuh `92027` (level 4) at 23:00:55.056 CET and `100134` (level 5) at 23:00:55.234 CET; same ProcessGuid, 178 ms separation | PASS — manual correlation, not automatic rule | [INC-005](../investigations/INC-005-process-chain-triage.md) |
+
 **Phase 2 screenshot disclosure:** No screenshots are included for Phase 2 because the real Windows and Wazuh views contained personal system identifiers. The linked INC-003 report uses selected, sanitized, reconstructed alert fields instead; these are not raw evidence exports.
 
 **Phase 3 screenshot disclosure:** The four custom rule matches were confirmed in the dashboard; unredacted images were intentionally omitted because they contain personal device and account identifiers. Only selected validation fields are documented.
