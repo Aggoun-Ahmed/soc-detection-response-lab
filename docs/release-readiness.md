@@ -17,7 +17,7 @@
 ## Release gates
 
 - [x] Final local regression re-run reported: **59/59 PASS**, 0 failures, 0.197 seconds (local confirmation; final Git HEAD should still be synchronized)
-- [ ] Inspect **all three existing Phase 1 screenshots** visually for personal names, machine names, user folders, IPs, tokens, URLs or open browser profile details; redact or remove before tagging
+- [ ] **Screenshot privacy:** user supplied all three Phase 1 screenshots and they were visually reviewed. `powershell-alert.png` and `brute-force-alert.png` show synthetic identifiers and no visible personal system details. `detection-overview.png` shows a long numeric value next to the top-bar `API` selector (`1513629884013`) that could identify an environment; **mask that region and replace the public image before tagging**. Recheck the final image after replacement.
 - [ ] Run a local source scan, including **Git history if any sensitive information was ever committed**; `.gitignore` prevents new accidents but does not scrub old commits
 - [ ] Check README commands and Markdown links after cleanup
 - [x] GitHub Actions Python tests **success** for release-readiness commit `0196549` ([run](https://github.com/Aggoun-Ahmed/soc-detection-response-lab/actions/runs/42534076532)); check CI again if release changes follow
