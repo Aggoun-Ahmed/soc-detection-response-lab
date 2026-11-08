@@ -86,6 +86,12 @@ A proposed native Wazuh rule `100135` failed `wazuh-analysisd -t` validation wit
 
 To test the correlation logic without asserting unsupported manager behavior, the repository now includes [`tools/sysmon_correlator.py`](../tools/sysmon_correlator.py) and [`tests/test_sysmon_correlator.py`](../tests/test_sysmon_correlator.py). The offline prototype takes a list of Wazuh alert dictionaries, matches `100133` followed by `100134` on both agent ID and ProcessGuid within 60 seconds, and returns sanitized findings. Unit tests include matching, mismatched GUID, mismatched agent, reverse-order, missing identifier, expired window, and duplicate cases. **The tests still require local execution; no production/live correlation is claimed.**
 
+## Real Wazuh alert pair — same-process positive test
+
+The operator executed a controlled benign PowerShell `-NoProfile -NonInteractive -EncodedCommand` action that wrote `SOC_LAB_CORRELATION_TEST` into the dedicated lab evidence file. File contents were verified locally. Wazuh indexed both **`100133`** (Sysmon Event ID **1**, level **10**, process execution at **2026-11-08 23:13:36.348 CET**) and **`100134`** (Sysmon Event ID **11**, level **5**, file event at **23:13:36.545 CET**).
+
+The two indexed alerts contain identical **`data.win.eventdata.processGuid`** values and agent ID `001`. The events are separated by **197 ms**, within the prototype 60-second interval. **PASS: real SIEM alert pair provides positive-test input for the offline correlator.** The operator has not yet run these two alert records through the Python correlator; therefore this is a verified manual join, not a verified programmatic end-to-end finding. Activity remains known-benign laboratory simulation, not compromise.
+
 ## Privacy and evidence handling
 
 The original Wazuh event contains private user, host, path, process and logon identifiers. Only manually selected sanitized fields and process basenames are published in this report; no original screenshots, full events, or personal identifiers are included.
