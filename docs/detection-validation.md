@@ -29,6 +29,8 @@ The following observations were made in the local Wazuh 4.14.10 lab on **7–8 N
 
 | Phase 4: SIEM-side analyst correlation across Sysmon Event IDs 1 and 11 | Match ProcessGuid for process creation and controlled file write | Wazuh `92027` (level 4) at 23:00:55.056 CET and `100134` (level 5) at 23:00:55.234 CET; same ProcessGuid, 178 ms separation | PASS — manual correlation, not automatic rule | [INC-005](../investigations/INC-005-process-chain-triage.md) |
 
+| Phase 4: offline correlation unit tests | Match rule `100133` followed by `100134` within 60 s on matching agent/ProcessGuid; reject mismatches and duplicates | 8 correlation tests passed; full local suite: 14 tests, 0 failures, 2026-11-08 | PASS — offline only | [Correlator](../tools/sysmon_correlator.py) · [Tests](../tests/test_sysmon_correlator.py) |
+
 **Phase 2 screenshot disclosure:** No screenshots are included for Phase 2 because the real Windows and Wazuh views contained personal system identifiers. The linked INC-003 report uses selected, sanitized, reconstructed alert fields instead; these are not raw evidence exports.
 
 **Phase 3 screenshot disclosure:** The four custom rule matches were confirmed in the dashboard; unredacted images were intentionally omitted because they contain personal device and account identifiers. Only selected validation fields are documented.
