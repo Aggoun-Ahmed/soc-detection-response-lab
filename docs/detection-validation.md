@@ -43,7 +43,11 @@ The following observations were made in the local Wazuh 4.14.10 lab on **7–8 N
 
 | Phase 5: checkpoint restart and replay (synthetic manual test) | First run holds `100133`; after restart, appended `100134` produces one finding; unchanged replay produces zero | Run 1: no output; Run 2: one finding, 0.197 s; Run 3: no output | PASS — controlled snapshot recovery only | [Checkpoint prototype](../tools/phase5_checkpoint.py) |
 
-| Phase 5: durable outbox lifecycle (manual synthetic test) | Finding persists in checkpoint until acknowledged | New checkpoint produced `id=1`, delta 0.197s; separate pending query returned same finding; after `--ack 1`, pending list empty | PASS — manual lifecycle, no concurrency test yet | [Phase 5 README](../README.md) |
+| Phase 5: durable outbox lifecycle (manual synthetic test) | Finding persists in checkpoint until acknowledged | New checkpoint produced `id=1`, delta 0.197s; separate pending query returned same finding; after `--ack 1`, pending list empty | PASS — controlled manual outbox lifecycle; concurrency separately tested | [Phase 5 README](../README.md) |
+
+| Phase 5: single-writer lock (manual Windows two-terminal test) | Competing CLI process rejected while lock held; succeeds after release | Second invocation returned `checkpoint is in use by another process`; retry after release completed with no pending findings | PASS — local cooperating CLI only | [Lock implementation](../tools/checkpoint_lock.py) |
+| Phase 5: retained log rotation handoff (manual synthetic test) | Preserve pending ProcessCreate across archive/new-file boundary and correlate FileCreate | Original `100133` produced no finding; ordered archived and active files produced one pending finding `id=1`, 0.197s; replay returned same ID | PASS — manually supplied segments, not automatic rotation discovery | [Checkpoint implementation](../tools/phase5_checkpoint.py) |
+| Phase 5: final automated regression suite | Full detection and recovery regression suite | **59/59 tests PASS**, 0 failures, 0.195 seconds | PASS — local test suite | [Tests](../tests/) |
 
 **Phase 2 screenshot disclosure:** No screenshots are included for Phase 2 because the real Windows and Wazuh views contained personal system identifiers. The linked INC-003 report uses selected, sanitized, reconstructed alert fields instead; these are not raw evidence exports.
 
