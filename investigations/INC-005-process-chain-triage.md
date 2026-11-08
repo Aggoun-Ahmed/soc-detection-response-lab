@@ -34,9 +34,15 @@ The three reduced-flag controls were independently checked using a time-scoped q
 
 **Known benign controlled test; no containment or incident escalation required for this event.** The rule is a valid detection of the chosen command-line pattern, not proof of attacker behavior.
 
+## Follow-up: direct GUID correlation verified
+
+The local Sysmon `ProcessCreate` include filter was expanded to collect `cmd.exe` in addition to Notepad and PowerShell. At **2026-11-08 22:44:07 CET**, a fresh harmless `cmd.exe /c` launch executed PowerShell with `Write-Output SOC_LAB_CHAIN_TEST`. The analyst parsed both Sysmon Event ID `1` records and joined the child's `ParentProcessGuid` with the parent's `ProcessGuid`. **Result: `powershell.exe` → `cmd.exe`, GUID match `True` (PASS).** Only executable basenames and a boolean match were displayed; the underlying GUIDs and account information remain private.
+
+This confirms a directly correlated immediate parent-child pair **for the fresh 22:44:07 test**. It does not retroactively provide a separate parent process event for the earlier 22:31–22:32 tests or establish the grandparent process.
+
 ## Next investigation action
 
-Temporarily extend the minimal Sysmon ProcessCreate include filter to `cmd.exe` as well, generate a **fresh harmless test**, and correlate its `ProcessGuid` and `ParentProcessGuid` values locally. Avoid exporting complete raw events or personal account and computer identifiers.
+Evaluate how collected parent-child context should affect rule severity and triage, and add more targeted negative tests if needed. Avoid publishing raw process GUIDs, user identities, or full event exports.
 
 ## Privacy and evidence handling
 
