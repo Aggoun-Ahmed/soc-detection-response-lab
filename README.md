@@ -146,6 +146,8 @@ The lock uses Windows byte-range locking (`msvcrt`) on Windows and `flock` on PO
 
 Three [cross-process regression tests](tests/test_checkpoint_lock.py) check contention, release/reacquisition, and abnormal process exit. **Verified locally: 53/53 tests passed, 0 failures, in 0.168 seconds.** Manual two-terminal contention validation remains pending.
 
+**Manual Windows two-terminal lock validation: PASS.** While one process held the checkpoint lock, a second CLI attempt returned `checkpoint is in use by another process`. After the first process released the lock, the same CLI query completed without an error and returned no pending findings, consistent with the previously acknowledged synthetic finding. This confirms cooperative single-writer locking for the tested local Windows setup; it is not evidence of distributed or uncooperative-access safety.
+
 ## Architecture
 
 ```mermaid
