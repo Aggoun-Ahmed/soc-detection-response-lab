@@ -2,7 +2,7 @@
 
 **A defensive cybersecurity portfolio project** built around Wazuh SIEM, Windows endpoint telemetry, safe synthetic test data, reproducible detection rules, and analyst-style investigations.
 
-> **Status: Two validated lab phases (7–8 November 2026).** Phase 1 verified manager-local synthetic JSON detections. Phase 2 verified **real Windows Security EventChannel telemetry** from an active Wazuh endpoint agent (`001`) and a custom five-event failed-logon correlation (`100120`, level 10). All authentication failures were deliberately induced against a nonexistent test username; no real attack or compromise occurred.
+> **Status: Two completed lab phases and an initial validated Phase 3 Sysmon test (7–8 November 2026).** Phase 1 verified manager-local synthetic JSON detections. Phase 2 verified **real Windows Security EventChannel telemetry** from an active Wazuh endpoint agent (`001`) and a custom five-event failed-logon correlation (`100120`, level 10). All authentication failures were deliberately induced against a nonexistent test username; no real attack or compromise occurred.
 
 ## Why this project exists
 
@@ -70,6 +70,15 @@ flowchart LR
   I --> D[Threat Hunting Dashboard]
   D --> N[INC-003 investigation]
 ```
+
+## Phase 3 — Sysmon endpoint telemetry (initial validation, 8 November 2026)
+
+Windows built-in Sysmon was enabled with a **minimal process-creation filter** limited to `notepad.exe`. The Windows Wazuh agent (`001`) collected events from `Microsoft-Windows-Sysmon/Operational` and forwarded them to the Docker-hosted Wazuh manager. A harmless Notepad launch generated a genuine Sysmon **Event ID 1**. The custom rule **`100130`** (level 5) matched it, and the corresponding alert was verified in the Wazuh dashboard with decoder `windows_eventchannel` and agent `001`.
+
+- **Detection rule:** [`rules/sysmon_rules.xml`](rules/sysmon_rules.xml)
+- **Outcome:** PASS for the controlled end-to-end Notepad process-creation test; this is a telemetry-pipeline check, **not** evidence of malicious activity.
+- **Privacy:** No unredacted Phase 3 dashboard screenshots or raw Windows logs are published because the telemetry includes personal endpoint identifiers (for example account and computer names, GUIDs, and file paths). The summary above contains selected non-sensitive validation fields only.
+- **Not yet tested:** broader process coverage, PowerShell-specific detections, negative controls, false-positive tuning and production readiness.
 
 ## Architecture
 
