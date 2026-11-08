@@ -126,7 +126,7 @@ class SnapshotCheckpoint:
             opener = gzip.open if file_path.suffix.lower() == ".gz" else open
             with opener(file_path, "rb") as handle:
                 for line in handle:
-                    if not line.endswith(b"\\n"):
+                    if not line.endswith(b"\n"):
                         raise ValueError("incomplete last line in a log segment")
                     yield line
 
