@@ -18,6 +18,8 @@ The following observations were made in the local Wazuh 4.14.10 lab on **7–8 N
 | Phase 3: encoded, no-profile, noninteractive combination | Windows Sysmon / agent `001` | `100133` | `100133` (level 10), 2026-11-08 22:31:22 CET | PASS | [INC-004](../investigations/INC-004-powershell-encoded-command.md) |
 | Phase 3: three reduced-flag negative-control executions | Windows Sysmon / agent `001` | No new `100133` | Two `100132` (level 8) and one `92032` (level 3) visible; no new `100133` in screenshot | PASS — targeted `100133` search returned 0 hits for 2026-11-08 22:32:10–22:32:35 CET | [INC-004](../investigations/INC-004-powershell-encoded-command.md) |
 
+| Phase 4: direct Sysmon process GUID correlation | New controlled `cmd.exe` → `powershell.exe` chain | Child `ParentProcessGuid` matched parent `ProcessGuid` at 2026-11-08 22:44:07 CET | PASS | [INC-005](../investigations/INC-005-process-chain-triage.md) |
+
 **Phase 2 screenshot disclosure:** No screenshots are included for Phase 2 because the real Windows and Wazuh views contained personal system identifiers. The linked INC-003 report uses selected, sanitized, reconstructed alert fields instead; these are not raw evidence exports.
 
 **Phase 3 screenshot disclosure:** The four custom rule matches were confirmed in the dashboard; unredacted images were intentionally omitted because they contain personal device and account identifiers. Only selected validation fields are documented.
