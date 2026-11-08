@@ -1,54 +1,68 @@
-"""Offline, privacy-conscious correlation of Wazuh Sysmon alerts.
+"""Offline correlation of selected Wazuh Sysmon alerts.
 
-Input: JSON array of Wazuh alert objects (rule.id, agent.id, data.win.*).
-No network operations; output contains no original GUIDs or account identifiers.
-This is NOT a Wazuh manager rule or live-response action.
+No network operations. Only sanitized findings are returned, never raw GUIDs,
+account identifiers, hostnames, or command lines. Not a live Wazuh rule.
 """
 from datetime import datetime, timezone
+from math import isfinite
 
 
-def _time(alert):
-    raw = (alert.get("data", {}).get("win", {}).get("eventdata", {}).get("utcTime")
-           or alert.get("timestamp"))
-    if not raw:
+def _object(value):
+    return value if isinstance(value, dict) else {}
+
+
+def _timestamp(alert):
+    event = _object(_object(_object(alert.get("data")).get("win")).get("eventdata"))
+    raw = event.get("utcTime") or alert.get("timestamp")
+    if not isinstance(raw, str) or not raw.strip():
         return None
     try:
-        return datetime.fromisoformat(str(raw).replace("Z", "+00:00")).replace(
-            tzinfo=timezone.utc
-        ) if datetime.fromisoformat(str(raw).replace("Z", "+00:00")).tzinfo is None else datetime.fromisoformat(str(raw).replace("Z", "+00:00")).astimezone(timezone.utc)
-    except (ValueError, TypeError):
+        parsed = datetime.fromisoformat(raw.strip().replace("Z", "+00:00"))
+        # Wazuh Sysmon utcTime is explicitly UTC even without an offset.
+        return (parsed.replace(tzinfo=timezone.utc) if parsed.tzinfo is None
+                else parsed.astimezone(timezone.utc))
+    except (ValueError, OverflowError):
         return None
 
 
 def correlate(alerts, window_seconds=60):
-    """Return sanitized findings for 100133 -> 100134 with same agent/GUID.
+    """Join 100133 -> 100134 by agent ID and process GUID within a time window.
 
-    Only correlate an encoded-flags alert before a controlled file alert.
-    One finding per event pair, without exposing raw system identifiers.
+    Input may arrive unsorted. Each process yields at most one finding; repeated
+    copies of either alert do not create additional findings. Missing/invalid
+    fields are ignored. Intended for bounded offline alert batches.
     """
-    if window_seconds <= 0:
-        raise ValueError("window_seconds must be positive")
-    prepared = []
+    if not isinstance(window_seconds, (int, float)) or not isfinite(window_seconds) or window_seconds <= 0:
+        raise ValueError("window_seconds must be a finite positive number")
+    if not isinstance(alerts, (list, tuple)):
+        raise TypeError("alerts must be a list or tuple of alert dictionaries")
+    events = []
     for alert in alerts:
-        rule_id = str(alert.get("rule", {}).get("id", ""))
+        if not isinstance(alert, dict):
+            continue
+        rule_id = str(_object(alert.get("rule")).get("id", ""))
         if rule_id not in {"100133", "100134"}:
             continue
-        agent = str(alert.get("agent", {}).get("id", "")).strip()
-        event = alert.get("data", {}).get("win", {}).get("eventdata", {})
-        guid = str(event.get("processGuid", "")).strip().lower()
-        when = _time(alert)
-        if not (agent and guid and when):
+        agent = _object(alert.get("agent")).get("id")
+        event = _object(_object(_object(alert.get("data")).get("win")).get("eventdata"))
+        guid = event.get("processGuid")
+        when = _timestamp(alert)
+        if not isinstance(agent, str) or not agent.strip() or not isinstance(guid, str) or not guid.strip() or when is None:
             continue
-        prepared.append((when, rule_id, agent, guid))
-    prepared.sort(key=lambda item: item[0])
-    prior = {}
+        events.append((when, rule_id, agent.strip(), guid.strip().lower()))
+    # Put process alert first if both event timestamps are identical.
+    events.sort(key=lambda event: (event[0], 0 if event[1] == "100133" else 1))
+    active = {}
+    emitted = set()
     findings = []
-    for when, rule_id, agent, guid in prepared:
+    for when, rule_id, agent, guid in events:
         key = (agent, guid)
+        if key in emitted:
+            continue
         if rule_id == "100133":
-            prior[key] = when
-        elif key in prior:
-            delta = (when - prior[key]).total_seconds()
+            active.setdefault(key, when)  # duplicate start must not reset clock
+        elif key in active:
+            delta = (when - active[key]).total_seconds()
             if 0 <= delta <= window_seconds:
                 findings.append({
                     "finding": "encoded_powershell_followed_by_lab_file_create",
@@ -58,5 +72,5 @@ def correlate(alerts, window_seconds=60):
                     "guid_match": True,
                     "agent_match": True,
                 })
-                del prior[key]
+                emitted.add(key)
     return findings
