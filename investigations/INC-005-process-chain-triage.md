@@ -80,6 +80,12 @@ Both corresponding alerts were located in the Wazuh alert index for the controll
 
 **Result: PASS — manual analyst correlation across two Wazuh alerts.** This establishes event attribution, not a new single automatic Wazuh correlation alert and not evidence of maliciousness. The associated activity was a controlled harmless lab file write. No process GUID, account identifiers, hostname, screenshot, or raw event was committed.
 
+## Offline automated correlation prototype
+
+A proposed native Wazuh rule `100135` failed `wazuh-analysisd -t` validation with warning `7620` about an invalid `if_matched_sid`; it was removed from the manager. A subsequent validation produced only the normal rule-tree informational message and no warning. **Rule `100135` was not deployed.**
+
+To test the correlation logic without asserting unsupported manager behavior, the repository now includes [`tools/sysmon_correlator.py`](../tools/sysmon_correlator.py) and [`tests/test_sysmon_correlator.py`](../tests/test_sysmon_correlator.py). The offline prototype takes a list of Wazuh alert dictionaries, matches `100133` followed by `100134` on both agent ID and ProcessGuid within 60 seconds, and returns sanitized findings. Unit tests include matching, mismatched GUID, mismatched agent, reverse-order, missing identifier, expired window, and duplicate cases. **The tests still require local execution; no production/live correlation is claimed.**
+
 ## Privacy and evidence handling
 
 The original Wazuh event contains private user, host, path, process and logon identifiers. Only manually selected sanitized fields and process basenames are published in this report; no original screenshots, full events, or personal identifiers are included.
