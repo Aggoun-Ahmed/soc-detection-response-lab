@@ -75,10 +75,11 @@ flowchart LR
 
 Windows built-in Sysmon was enabled with a **minimal process-creation filter**, initially limited to `notepad.exe` and subsequently expanded to `powershell.exe` and `pwsh.exe`. The Windows Wazuh agent (`001`) collected events from `Microsoft-Windows-Sysmon/Operational` and forwarded them to the Docker-hosted Wazuh manager. A harmless Notepad launch generated a genuine Sysmon **Event ID 1**. The custom rule **`100130`** (level 5) matched it, and the corresponding alert was verified in the Wazuh dashboard with decoder `windows_eventchannel` and agent `001`.
 
-- **Detection rules:** [`rules/sysmon_rules.xml`](rules/sysmon_rules.xml) (`100130` Notepad and `100131` controlled PowerShell marker).
+- **Detection rules:** [`rules/sysmon_rules.xml`](rules/sysmon_rules.xml) (`100130` Notepad, `100131` controlled PowerShell marker, and `100132` encoded-command indicator).
 - **Outcome:** PASS for the controlled end-to-end Notepad process-creation test. **PASS** for a second test in which `powershell.exe -NoProfile -Command "Write-Output 'SOC_LAB_PHASE3_TEST'"` generated a genuine Sysmon Event ID `1`, and custom rule `100131` (level 5) appeared in the Wazuh dashboard for agent `001` (observed 8 November 2026, 21:08:50 UTC). Both tests validate telemetry collection and rule matching, **not** malicious activity.
+- **Encoded PowerShell validation:** A harmless UTF-16LE Base64 command launched using `-EncodedCommand` was collected as Sysmon Event ID `1`. The built-in Wazuh rule `92057` (level 12) was seen in an initial PowerShell-parent test. A subsequent `cmd.exe`-parent test produced **custom rule `100132` (level 8)** in the dashboard at 2026-11-08 21:18:04 UTC. See [INC-004 — Encoded PowerShell process creation](investigations/INC-004-powershell-encoded-command.md). These are technique-indicator tests, not malicious activity.
 - **Privacy:** No unredacted Phase 3 dashboard screenshots or raw Windows logs are published because the telemetry includes personal endpoint identifiers (for example account and computer names, GUIDs, and file paths). The summary above contains selected non-sensitive validation fields only.
-- **Not yet tested:** suspicious PowerShell behavioral indicators, negative controls, false-positive tuning and production readiness. A marker match is not a general PowerShell threat detection.
+- **Not yet tested:** negative controls, broader suspicious PowerShell behaviors, false-positive tuning and production readiness.
 
 ## Architecture
 
@@ -210,6 +211,8 @@ Do **not** commit credentials, generated certificates, actual corporate logs or 
 - [`investigations/INC-002-powershell-simulation.md`](investigations/INC-002-powershell-simulation.md): suspicious PowerShell telemetry case study.
 - [`screenshots/`](screenshots/): Wazuh Threat Hunting evidence from Phase 1.
 - [`rules/windows_auth_rules.xml`](rules/windows_auth_rules.xml): validated Phase 2 Windows Event ID 4625 correlation rule.
+- [`rules/sysmon_rules.xml`](rules/sysmon_rules.xml): Phase 3 custom Sysmon process creation rules.
+- [`investigations/INC-004-powershell-encoded-command.md`](investigations/INC-004-powershell-encoded-command.md): sanitized Phase 3 PowerShell detection investigation.
 - [`investigations/INC-003-windows-authentication.md`](investigations/INC-003-windows-authentication.md): Phase 2 investigation and sanitized detection evidence.
 
 ## References
