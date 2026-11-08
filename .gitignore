@@ -10,3 +10,12 @@ __pycache__/
 .pytest_cache/
 .venv/
 .DS_Store
+
+# Local Windows telemetry and checkpoint artifacts (never commit)
+alerts.json
+alerts.jsonl
+*.state.json
+*.lock
+*.jsonl.gz
+phase5-*.jsonl
+phase5-*.json
