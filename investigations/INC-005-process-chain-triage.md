@@ -103,7 +103,13 @@ The operator queried the local Wazuh manager's `alerts.json`, filtering for rule
 - Elapsed time: **0.197 seconds** (within 60-second correlation window)
 - Triage priority: `investigate`, **not** a confirmed malicious incident
 
-**Result: PASS — full offline pipeline from real Windows Sysmon events through Wazuh alerts to a locally generated correlation finding.** No original Wazuh alerts, usernames, hostnames, GUIDs, or system paths were published. Continuous/live deployment and real-event negative-control testing remain out of scope for this result.
+**Result: PASS — full offline pipeline from real Windows Sysmon events through Wazuh alerts to a locally generated correlation finding.** No original Wazuh alerts, usernames, hostnames, GUIDs, or system paths were published. Continuous/live deployment remains out of scope for this result.
+
+## Real Wazuh negative-control correlation — PASS
+
+The operator executed two separate controlled PowerShell processes: **Process A** invoked benign encoded PowerShell with `-NoProfile -NonInteractive` and generated rule `100133` (Sysmon Event ID `1`); **Process B** ran ordinary PowerShell to write a dedicated harmless lab file and generated rule `100134` (Sysmon Event ID `11`). The file contents were confirmed locally. Both alerts were retrieved from the manager's `alerts.json` using a test-start-time filter and passed to the offline Python correlator.
+
+Observed sanitized output: **2 matching alert inputs**, then **`[]` (zero correlated findings)**. **Result: PASS — a real-data negative test showing that temporally nearby alerts from separate processes were not incorrectly joined.** This complements the earlier same-process positive test. This is a limited controlled scenario, not proof of zero false positives in production.
 
 ## Privacy and evidence handling
 
