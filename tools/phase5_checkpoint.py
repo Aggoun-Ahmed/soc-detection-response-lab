@@ -38,6 +38,8 @@ class SnapshotCheckpoint:
         self.lines = 0
         self.digest = ZERO_HASH
         self.secret = secrets.token_bytes(32)
+        self.pending = []
+        self.next_finding_id = 1
         if self.path.exists():
             data = json.loads(self.path.read_text(encoding="utf-8"))
             if not isinstance(data, dict) or data.get("version") != VERSION:
@@ -49,6 +51,14 @@ class SnapshotCheckpoint:
                     or not isinstance(self.digest, str) or len(self.digest) != 64
                     or len(self.secret) != 32):
                 raise ValueError("invalid checkpoint metadata")
+            self.pending = data.get("pending", [])
+            self.next_finding_id = data.get("next_finding_id", 1)
+            if (not isinstance(self.pending, list) or not isinstance(self.next_finding_id, int)
+                    or self.next_finding_id < 1 or any(
+                        not isinstance(item, dict) or not isinstance(item.get("id"), int)
+                        or not isinstance(item.get("finding"), dict)
+                        for item in self.pending)):
+                raise ValueError("invalid outbox data")
             state = data["engine"]
             self.engine.processes = _deserialize_dates(state["processes"])
             self.engine.files = _deserialize_dates(state["files"])
@@ -62,6 +72,7 @@ class SnapshotCheckpoint:
         return {
             "version": VERSION, "lines": self.lines, "digest": self.digest,
             "secret": base64.b64encode(self.secret).decode("ascii"),
+            "pending": self.pending, "next_finding_id": self.next_finding_id,
             "engine": {
                 "processes": pack(self.engine.processes),
                 "files": pack(self.engine.files),
@@ -133,21 +144,50 @@ class SnapshotCheckpoint:
                 batch = self.engine.ingest(self._pseudonymize(alert))
                 self.lines = count
                 self.digest = rolling
+                for finding in batch:
+                    self.pending.append({"id": self.next_finding_id, "finding": finding})
+                    self.next_finding_id += 1
+                # Cursor, correlation state and outbox commit in the same atomic file replace.
                 self._write()
                 findings.extend(batch)
         if not verified:
             raise RuntimeError("alert source truncated; refusing checkpoint reuse")
         return findings
 
+    def pending_findings(self):
+        """Sanitized findings awaiting explicit acknowledgement."""
+        return list(self.pending)
+
+    def acknowledge(self, finding_id):
+        """Only remove an item after a human or downstream consumer handles it."""
+        if not isinstance(finding_id, int) or finding_id < 1:
+            raise ValueError("invalid finding ID")
+        if not any(item["id"] == finding_id for item in self.pending):
+            raise ValueError("finding ID is not pending")
+        self.pending = [item for item in self.pending if item["id"] != finding_id]
+        self._write()
+
 
 def main():
     parser = argparse.ArgumentParser(description="Read-only checkpointed Wazuh snapshot replay")
-    parser.add_argument("--input", required=True, help="Local copy of alerts.json (sensitive)")
+    parser.add_argument("--input", help="Local append-only JSONL snapshot (sensitive)")
     parser.add_argument("--state", required=True, help="Local checkpoint path, outside Git repo")
+    options = parser.add_mutually_exclusive_group()
+    options.add_argument("--pending", action="store_true", help="List unacknowledged findings")
+    options.add_argument("--ack", type=int, metavar="ID", help="Acknowledge one displayed finding ID")
     args = parser.parse_args()
+    if not (args.input or args.pending or args.ack is not None):
+        parser.error("--input or --pending or --ack is required")
+    if args.input and (args.pending or args.ack is not None):
+        parser.error("--input cannot be combined with --pending or --ack")
     worker = SnapshotCheckpoint(args.state)
-    for finding in worker.process(args.input):
-        print(json.dumps(finding), flush=True)
+    if args.ack is not None:
+        worker.acknowledge(args.ack)
+        return
+    if args.input:
+        worker.process(args.input)
+    for item in worker.pending_findings():
+        print(json.dumps(item), flush=True)
 
 
 if __name__ == "__main__":
