@@ -120,6 +120,22 @@ This is a **bounded snapshot-recovery prototype, not a production tailer or guar
 
 To validate code and tests, synchronize GitHub and run `py -3 -m unittest discover -s tests -v`. The local test suite completed successfully on **8 November 2026: 44/44 tests PASS, 0 failures, in 0.042 seconds** (37 existing + 7 checkpoint tests). The operator also completed a manual three-run synthetic restart test: the first run saved a pending `100133` event with no output; a second run restored the checkpoint and correlated a newly appended `100134` event into **one sanitized finding** (`delta_seconds: 0.197`); a third replay of the unchanged source emitted **zero duplicate findings**. **PASS — controlled snapshot checkpoint/restart behavior**, not production crash recovery.
 
+### Step 4 — Durable findings outbox (prototype, pending tests)
+
+The [checkpoint processor](tools/phase5_checkpoint.py) now commits **sanitized findings to a local pending outbox in the same atomic state-file replacement as the input cursor and correlation state**. After restarting, unacknowledged findings can be listed again. Explicit acknowledgment deletes only the selected pending finding; the tool does **not** automatically acknowledge when it prints. Existing version-1 checkpoints without an outbox remain readable.
+
+**Usage** (run from repository root; keep the source JSONL and checkpoint **outside Git**):
+
+```powershell
+py -3 -m tools.phase5_checkpoint --input C:\SOC-Lab\phase5-checkpoint-demo.jsonl --state C:\SOC-Lab\phase5-checkpoint-demo.state.json
+py -3 -m tools.phase5_checkpoint --pending --state C:\SOC-Lab\phase5-checkpoint-demo.state.json
+py -3 -m tools.phase5_checkpoint --ack 1 --state C:\SOC-Lab\phase5-checkpoint-demo.state.json
+```
+
+The processor prints each pending finding with an integer `id`. A finding remains pending across restarts until explicitly acknowledged. **Only acknowledge a finding after verifying it was recorded by the intended downstream analyst or system**. If the process crashes after saving but before the output reaches its consumer, the finding will be shown again: **at-least-once review is possible, but duplicates must be handled downstream**. Console output, an external notification, and acknowledgment are not one atomic transaction. The prototype does not yet prevent simultaneous writers or support log rotation. Restrict local checkpoint access, as it contains secret pseudonymization key material.
+
+Six additional [outbox tests](tests/test_phase5_checkpoint.py) cover restart recovery, replay without duplicates, acknowledgement persistence, invalid acknowledgment, identifier redaction, and compatibility with older checkpoints. **Expected local suite: 50 tests; not yet run for this change.**
+
 ## Architecture
 
 ```mermaid
