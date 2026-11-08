@@ -52,6 +52,10 @@ This is a **manually transcribed selection of fields visible in the dashboard**,
 
 The analyst should inspect the command-line context, parent-child relationship, executable path, signing data, endpoint role, user context, related PowerShell logging, and subsequent behavior. A single encoded PowerShell invocation is insufficient to conclude compromise.
 
-**Not yet validated:** false-positive rate, negative controls without encoded arguments, variants of abbreviated switches, robustness against mixed or altered argument formatting, production tuning, and broad endpoint coverage. Sysmon was configured to collect only Notepad and PowerShell process creation for this lab.
+### Ordinary PowerShell negative-control observations
+
+On 8 November 2026, three harmless PowerShell commands without encoded-command arguments were run: `Write-Output 'SOC_LAB_NORMAL_TEST'`, `Get-Date`, and a script block printing `SOC_LAB_SCRIPTBLOCK_TEST`. Three corresponding local Sysmon Event ID `1` records were confirmed. The Wazuh dashboard screenshot showed three built-in `92027` (level 4) alerts at approximately 22:23:20–22:23:33 CET. No `100132` alert is visible in that supplied screenshot, but the view was not a complete, isolated `100132` search for the test interval. Accordingly, this is **preliminary negative-control evidence**, not a conclusive proof of zero false positives.
+
+**Not yet validated:** targeted no-match verification for `100132` during the negative-control interval, false-positive rate, abbreviated switch variants, robustness against altered argument formatting, production tuning, and broad endpoint coverage. Sysmon was configured to collect only Notepad and PowerShell process creation for this lab.
 
 **Related:** [README](../README.md) · [Detection validation matrix](../docs/detection-validation.md)
