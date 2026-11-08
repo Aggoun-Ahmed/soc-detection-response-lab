@@ -111,6 +111,12 @@ The operator executed two separate controlled PowerShell processes: **Process A*
 
 Observed sanitized output: **2 matching alert inputs**, then **`[]` (zero correlated findings)**. **Result: PASS — a real-data negative test showing that temporally nearby alerts from separate processes were not incorrectly joined.** This complements the earlier same-process positive test. This is a limited controlled scenario, not proof of zero false positives in production.
 
+## Correlation robustness validation — PASS
+
+Following the real-alert positive and negative trials, the offline Python correlator was hardened for malformed alert structures, missing/invalid timestamps, timezone normalization, duplicate events, out-of-order batches, and correlation-window boundaries. The operator ran `py -3 -m unittest discover -s tests -v` on **8 November 2026**. **25 tests passed with 0 failures in 0.007 seconds** (6 original tests and 19 correlator tests).
+
+**Conclusion:** Core offline detection, process attribution, correlation and controlled false-positive-resistance scenarios passed. Live/continuous processing, production-level throughput, incident handling, and broader telemetry coverage have **not** been validated. Existing Wazuh detection rules were not changed during this hardening step.
+
 ## Privacy and evidence handling
 
 The original Wazuh event contains private user, host, path, process and logon identifiers. Only manually selected sanitized fields and process basenames are published in this report; no original screenshots, full events, or personal identifiers are included.
