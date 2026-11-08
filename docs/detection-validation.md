@@ -22,6 +22,8 @@ The following observations were made in the local Wazuh 4.14.10 lab on **7–8 N
 
 | Phase 4: additional benign PowerShell baseline (3 commands) | No `100132`, `100133`, or `92057` alerts | 0 hits in targeted time-scoped Wazuh query, reported by lab operator | PASS (limited baseline) | [INC-005](../investigations/INC-005-process-chain-triage.md) |
 
+| Phase 4: benign encoded administrative-style command | Rule `100133` expected; known authorized test | `100133` (level 10), Sysmon Event ID 1 at 2026-11-08 22:52:41 CET | PASS — demonstrates signature matches benign automation too | [INC-005](../investigations/INC-005-process-chain-triage.md) |
+
 **Phase 2 screenshot disclosure:** No screenshots are included for Phase 2 because the real Windows and Wazuh views contained personal system identifiers. The linked INC-003 report uses selected, sanitized, reconstructed alert fields instead; these are not raw evidence exports.
 
 **Phase 3 screenshot disclosure:** The four custom rule matches were confirmed in the dashboard; unredacted images were intentionally omitted because they contain personal device and account identifiers. Only selected validation fields are documented.
