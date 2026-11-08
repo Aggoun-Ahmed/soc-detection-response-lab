@@ -73,12 +73,12 @@ flowchart LR
 
 ## Phase 3 — Sysmon endpoint telemetry (initial validation, 8 November 2026)
 
-Windows built-in Sysmon was enabled with a **minimal process-creation filter** limited to `notepad.exe`. The Windows Wazuh agent (`001`) collected events from `Microsoft-Windows-Sysmon/Operational` and forwarded them to the Docker-hosted Wazuh manager. A harmless Notepad launch generated a genuine Sysmon **Event ID 1**. The custom rule **`100130`** (level 5) matched it, and the corresponding alert was verified in the Wazuh dashboard with decoder `windows_eventchannel` and agent `001`.
+Windows built-in Sysmon was enabled with a **minimal process-creation filter**, initially limited to `notepad.exe` and subsequently expanded to `powershell.exe` and `pwsh.exe`. The Windows Wazuh agent (`001`) collected events from `Microsoft-Windows-Sysmon/Operational` and forwarded them to the Docker-hosted Wazuh manager. A harmless Notepad launch generated a genuine Sysmon **Event ID 1**. The custom rule **`100130`** (level 5) matched it, and the corresponding alert was verified in the Wazuh dashboard with decoder `windows_eventchannel` and agent `001`.
 
-- **Detection rule:** [`rules/sysmon_rules.xml`](rules/sysmon_rules.xml)
-- **Outcome:** PASS for the controlled end-to-end Notepad process-creation test; this is a telemetry-pipeline check, **not** evidence of malicious activity.
+- **Detection rules:** [`rules/sysmon_rules.xml`](rules/sysmon_rules.xml) (`100130` Notepad and `100131` controlled PowerShell marker).
+- **Outcome:** PASS for the controlled end-to-end Notepad process-creation test. **PASS** for a second test in which `powershell.exe -NoProfile -Command "Write-Output 'SOC_LAB_PHASE3_TEST'"` generated a genuine Sysmon Event ID `1`, and custom rule `100131` (level 5) appeared in the Wazuh dashboard for agent `001` (observed 8 November 2026, 21:08:50 UTC). Both tests validate telemetry collection and rule matching, **not** malicious activity.
 - **Privacy:** No unredacted Phase 3 dashboard screenshots or raw Windows logs are published because the telemetry includes personal endpoint identifiers (for example account and computer names, GUIDs, and file paths). The summary above contains selected non-sensitive validation fields only.
-- **Not yet tested:** broader process coverage, PowerShell-specific detections, negative controls, false-positive tuning and production readiness.
+- **Not yet tested:** suspicious PowerShell behavioral indicators, negative controls, false-positive tuning and production readiness. A marker match is not a general PowerShell threat detection.
 
 ## Architecture
 
