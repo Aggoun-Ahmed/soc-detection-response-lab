@@ -2,20 +2,40 @@
 
 **A defensive cybersecurity portfolio project** built around Wazuh SIEM, synthetic security telemetry, reproducible detection rules, and analyst-style investigations.
 
-> **Status:** Starter repository. Offline Python unit tests are included. The full Wazuh integration **must be run and verified on your computer** before claiming a live SIEM deployment. Replace the placeholder GitHub username and add authentic evidence only after validation.
+> **Status: Live Wazuh detection validated (7 November 2026).** Both scenarios triggered custom rules in Wazuh 4.14.10 and produced indexed alerts visible in the Threat Hunting dashboard. Tests use deliberately **synthetic JSON telemetry**, collected locally by the Wazuh manager (`agent.id: 000`); no actual Windows endpoint agent, malicious execution, or real compromise is claimed.
 
 ## Why this project exists
 
 This project demonstrates a realistic, limited SOC workflow: ingest logs → identify suspicious behavior → validate alerts → investigate → document conclusions and limitations. It uses **harmless, synthetic events**; it does not carry out attacks or execute malware.
 
-## Detection scenarios
+## Verified detection results
 
-| Scenario | Rule(s) | ATT&CK | Expected result |
-| --- | --- | --- | --- |
-| Repeated authentication failures from a single source | `100100` → `100101` | T1110 | 5 matching events within 60 s can trigger correlation |
-| Synthetic encoded PowerShell execution indicator | `100110` | T1059.001 | 1 alert on test event |
+Tested on **7 November 2026** using the official Wazuh **4.14.10** single-node Docker stack on Windows + Docker Desktop/WSL2. Events were injected as synthetic JSON lines into `/var/ossec/logs/lab-events.jsonl`. Wazuh decoded, correlated where applicable, and indexed the corresponding alerts.
 
-> ATT&CK IDs are detection hypothesis mappings, not proof of malicious activity or complete ATT&CK coverage. Detection rules require tuning against real telemetry.
+| Scenario | Wazuh rule | Level | MITRE ATT&CK | Observed result |
+| --- | --- | --- | --- | --- |
+| Individual simulated failed login | `100100` | 3 | T1110 | Base authentication-failure events visible in dashboard |
+| **Five failed logins** from `192.0.2.44` within the correlation window | **`100101`** | **10** | **T1110 — Brute Force** | **Frequency-5 correlation fired; indexed alert verified** |
+| Synthetic suspicious PowerShell process indicator | **`100110`** | **8** | **T1059.001 — PowerShell** | **Custom rule fired; indexed alert verified** |
+
+The observed synthetic authentication events referenced `demo_user` and `demo-win01`; the source IP `192.0.2.44` is an RFC 5737 documentation address. The PowerShell scenario described suspicious process metadata only—**no PowerShell command was executed**.
+
+### Dashboard evidence
+
+| Evidence | Screenshot |
+| --- | --- |
+| Wazuh Threat Hunting overview showing lab alerts | [Detection overview](screenshots/detection-overview.png) |
+| Correlated authentication-failure alert (`100101`, level 10) | [Brute-force alert](screenshots/brute-force-alert.png) |
+| Suspicious PowerShell indicator (`100110`, level 8) | [PowerShell alert](screenshots/powershell-alert.png) |
+
+![Wazuh SOC lab detection overview](screenshots/detection-overview.png)
+
+### SOC investigation write-ups
+
+- [INC-001 — Repeated authentication failures (controlled simulation)](investigations/INC-001-brute-force-simulation.md)
+- [INC-002 — Suspicious PowerShell indicator (controlled simulation)](investigations/INC-002-powershell-simulation.md)
+
+**Scope and limitations:** These results verify synthetic log collection, JSON decoding, rule evaluation, frequency correlation, alert indexing, and dashboard visibility. They do **not** validate authentication against a real service, Windows endpoint telemetry, real PowerShell execution, incident containment, or a real-world compromise. ATT&CK mappings are hypotheses for detection coverage, not evidence of a completed attack.
 
 ## Architecture
 
@@ -120,15 +140,17 @@ docker compose down
 
 Avoid `docker compose down -v` unless you intentionally want to permanently delete local SIEM data.
 
-## What to publish after a successful run
+## Validation evidence and next improvements
 
-1. Screenshot of dashboard alerts with private details removed (`docs/evidence/`).
-2. A real alert JSON excerpt with timestamps, rule ID and synthetic source IP.
-3. Filled-in [`investigations/incident-001.md`](investigations/incident-001.md), distinguishing simulated facts from analyst interpretation.
-4. A short test matrix: expected detection vs observed detection, including false positives and limitations.
-5. A paragraph on what you would improve (thresholds, distinct source IPs, EDR endpoint telemetry, KQL/Sigma).
+**Completed:** Both custom scenarios passed the real Wazuh pipeline and are documented with dashboard screenshots and incident write-ups above. The earlier offline Python reference analyzer and unit tests provide additional checks, but are not substitutes for SIEM integration validation.
 
-Do **not** upload private credentials, real corporate logs or screenshots with personal data.
+**Next validation work:**
+1. Test negative cases (unrelated JSON events and distinct source IPs) and update [the validation matrix](docs/detection-validation.md), which still contains a **pre-integration checklist**.
+2. Deploy a Wazuh agent on an isolated Windows endpoint to collect real Windows event telemetry instead of manager-local synthetic JSON.
+3. Tune rule conditions and thresholds against representative benign activity and document false positives.
+4. Add sanitized alert JSON excerpts and repeatable evidence-capture steps.
+
+Do **not** commit credentials, generated certificates, actual corporate logs or private information.
 
 ## Project files
 
@@ -140,7 +162,10 @@ Do **not** upload private credentials, real corporate logs or screenshots with p
 - [`scripts/ingest-events.ps1`](scripts/ingest-events.ps1): feed synthetic telemetry.
 - [`tests/`](tests/): automated checks.
 - [`docs/threat-model.md`](docs/threat-model.md): scope and assumptions.
-- [`docs/detection-validation.md`](docs/detection-validation.md): validation checklist.
+- [`docs/detection-validation.md`](docs/detection-validation.md): validation checklist (historical checklist; not yet updated with these observed results).
+- [`investigations/INC-001-brute-force-simulation.md`](investigations/INC-001-brute-force-simulation.md): authentication-correlation case study.
+- [`investigations/INC-002-powershell-simulation.md`](investigations/INC-002-powershell-simulation.md): suspicious PowerShell telemetry case study.
+- [`screenshots/`](screenshots/): Wazuh Threat Hunting evidence.
 
 ## References
 
