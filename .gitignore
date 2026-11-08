@@ -1,0 +1,12 @@
+# Untracked upstream Wazuh environment, certificates, persistent data
+external/
+.env
+*.key
+*.pem
+*.p12
+*.pfx
+*.log
+__pycache__/
+.pytest_cache/
+.venv/
+.DS_Store

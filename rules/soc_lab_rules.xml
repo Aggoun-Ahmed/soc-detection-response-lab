@@ -1,0 +1,27 @@
+<!-- Custom SOC portfolio rules: synthetic JSONL event source. IDs reserved in local range. -->
+<group name="soc_portfolio,">
+  <rule id="100100" level="3">
+    <decoded_as>json</decoded_as>
+    <field name="lab">^soc-portfolio$</field>
+    <field name="event_type">^auth_failure$</field>
+    <description>LAB: synthetic authentication failure observed</description>
+    <group>authentication_failed,</group>
+    <mitre><id>T1110</id></mitre>
+  </rule>
+  <rule id="100101" level="10" frequency="5" timeframe="60">
+    <if_matched_sid>100100</if_matched_sid>
+    <same_field>source_ip</same_field>
+    <description>LAB: repeated authentication failures from same source IP</description>
+    <group>authentication_failures,</group>
+    <mitre><id>T1110</id></mitre>
+  </rule>
+  <rule id="100110" level="8">
+    <decoded_as>json</decoded_as>
+    <field name="lab">^soc-portfolio$</field>
+    <field name="event_type">^suspicious_powershell$</field>
+    <field name="process_name">^powershell.exe$</field>
+    <description>LAB: synthetic suspicious PowerShell process indicator</description>
+    <group>powershell,</group>
+    <mitre><id>T1059.001</id></mitre>
+  </rule>
+</group>

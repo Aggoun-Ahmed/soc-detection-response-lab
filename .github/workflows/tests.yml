@@ -1,0 +1,18 @@
+name: Python tests
+on:
+  push:
+  pull_request:
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Run unit tests
+        run: python -m unittest discover -s tests -v
+      - name: Generate safe sample events
+        run: |
+          python scripts/generate_events.py --scenario all --out samples/generated-events.jsonl
+          python scripts/analyze_events.py samples/generated-events.jsonl
