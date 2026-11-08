@@ -2,7 +2,7 @@
 
 **A defensive cybersecurity portfolio project** built around Wazuh SIEM, Windows endpoint telemetry, safe synthetic test data, reproducible detection rules, and analyst-style investigations.
 
-> **Status: Two completed lab phases and an initial validated Phase 3 Sysmon test (7–8 November 2026).** Phase 1 verified manager-local synthetic JSON detections. Phase 2 verified **real Windows Security EventChannel telemetry** from an active Wazuh endpoint agent (`001`) and a custom five-event failed-logon correlation (`100120`, level 10). All authentication failures were deliberately induced against a nonexistent test username; no real attack or compromise occurred.
+> **Status (8 November 2026): Phases 1–4 validated in a controlled lab.** Phase 1 covers synthetic detections; Phase 2 covers genuine Windows security telemetry; Phase 3 covers Sysmon process creation and encoded PowerShell rules; Phase 4 covers investigative triage, Sysmon FileCreate detection, same-process attribution, and an **offline** Python correlation engine. The full local suite passed **25/25 tests**. No real attack or compromise occurred.
 
 ## Why this project exists
 
@@ -81,6 +81,22 @@ Windows built-in Sysmon was enabled with a **minimal process-creation filter**, 
 - **Combined-flag detection:** A harmless `-EncodedCommand` test with `-NoProfile` and `-NonInteractive` triggered custom **rule `100133`, level 10**, on 8 November 2026 at 22:31:22 CET. Follow-up tests each omitted one required option and the dashboard showed two `100132` (level 8) alerts and one built-in `92032` (level 3) alert, with no additional `100133` visible in the supplied time-window screenshot. These are controlled flag-pattern tests, not proof of malicious activity.
 - **Privacy:** No unredacted Phase 3 dashboard screenshots or raw Windows logs are published because the telemetry includes personal endpoint identifiers (for example account and computer names, GUIDs, and file paths). The summary above contains selected non-sensitive validation fields only.
 - **Not yet tested:** broad false-positive rate, all abbreviated switch variants, additional suspicious PowerShell behaviors, and production readiness.
+
+## Phase 4 — Threat hunting, tuning and offline correlation (validated 8 November 2026)
+
+Phase 4 investigated suspicious-looking PowerShell activity in a known-benign lab. Sysmon Event ID `1` captured process creation and Event ID `11` captured controlled file creation, using narrowly scoped filters. Wazuh generated custom rules `100133` (PowerShell encoded flags, level 10) and `100134` (controlled file creation, level 5). Alerts for the same process were linked by **agent ID + ProcessGuid**.
+
+| Validation | Outcome |
+| --- | --- |
+| Controlled file creation and ProcessGuid attribution | PASS — matching Sysmon Event IDs 1 and 11 |
+| Same-process real Wazuh alert correlation | PASS — `100133` + `100134`, 0.197-second interval, one finding |
+| Different-process real Wazuh negative control | PASS — two alerts, zero findings |
+| Benign encoded administration | `100133` triggered; flagged activity was not malicious |
+| Offline regression suite | **25 tests passed**, 0 failures |
+
+**Architecture:** Windows Sysmon → Wazuh manager alert indexing → manually selected local alert batch → [offline Python correlator](tools/sysmon_correlator.py) → sanitized investigation finding. The correlator requires matching agent and ProcessGuid within 60 seconds. It is **not** a continuously running Wazuh correlation rule or production SOC service. An experimental Wazuh native rule `100135` failed validation and was removed; it was not deployed.
+
+**Privacy:** Phase 4 publishes no raw endpoint event dumps, screenshots, usernames, hostnames or process GUIDs. See [INC-005 — process-chain triage and correlation](investigations/INC-005-process-chain-triage.md), [file creation rule](rules/sysmon_file_rules.xml), and the [validation matrix](docs/detection-validation.md).
 
 ## Architecture
 
