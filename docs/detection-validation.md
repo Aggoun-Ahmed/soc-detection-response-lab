@@ -13,6 +13,8 @@ The following observations were made in the local Wazuh 4.14.10 lab on **7–8 N
 | Phase 2: one Windows failed logon Event ID 4625 | Windows agent `001` | `60122` | `60122` (level 5) | PASS | [INC-003](../investigations/INC-003-windows-authentication.md) |
 | Phase 2: five Windows failed logons within 60s for one test username | Windows agent `001` | `100120` | `100120` (level 10), fired twice across two runs | PASS | [INC-003 sanitized excerpt](../investigations/INC-003-windows-authentication.md) |
 
+**Phase 2 screenshot disclosure:** No screenshots are included for Phase 2 because the real Windows and Wazuh views contained personal system identifiers. The linked INC-003 report uses selected, sanitized, reconstructed alert fields instead; these are not raw evidence exports.
+
 ## Not yet tested
 
 | Negative / additional test | Expected | Status |
