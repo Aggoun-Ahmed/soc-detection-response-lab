@@ -1,0 +1,1 @@
+<group name="soc_windows_auth,"><rule id="100120" level="10" frequency="5" timeframe="60"><if_matched_sid>60122</if_matched_sid><same_field>win.eventdata.targetUserName</same_field><description>SOC LAB: Repeated Windows failed logons for the same account</description><mitre><id>T1110</id></mitre><group>authentication_failures,windows_brute_force,</group></rule></group>
