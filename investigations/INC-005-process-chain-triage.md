@@ -52,6 +52,10 @@ These results show useful distinctions among process contexts and rule condition
 
 **Tuning decision:** retain current severity levels (`100132` level 8 and `100133` level 10) pending a broader benign baseline and scenario coverage. Treat each alert as an investigation indicator, not a confirmed attack, and prioritize parent process, decoded command content, user context, and corroborating telemetry before escalation. No live rules were modified during this assessment.
 
+## Additional benign PowerShell baseline
+
+Three additional harmless PowerShell runs were initiated: (A) `powershell.exe -NoProfile -Command "Get-Date"`, (B) `cmd.exe /c` launching PowerShell to print `SOC_LAB_BASELINE`, and (C) the same CMD-parent test adding `-NonInteractive`. The lab operator reports that a time-scoped Wazuh Threat Hunting search for `rule.id: (100132 or 100133 or 92057)` across these tests returned **0 hits**. **Result: PASS for this limited benign baseline**, with no alerts from the three selected higher-priority rules. Event-by-event Sysmon correlation was not repeated for these specific runs, and these results do not establish a production false-positive rate.
+
 ## Privacy and evidence handling
 
 The original Wazuh event contains private user, host, path, process and logon identifiers. Only manually selected sanitized fields and process basenames are published in this report; no original screenshots, full events, or personal identifiers are included.
