@@ -4,6 +4,13 @@
     <if_group>sysmon_event1</if_group>
     <field name="win.eventdata.image" type="pcre2">(?i)\\notepad\.exe$</field>
     <description>SOC LAB: Notepad process creation detected via Sysmon</description>
+    <group>soc_lab,sysmon_test,  <!-- Marker-based, safe PowerShell telemetry validation; not a malicious-activity signature. -->
+  <rule id="100131" level="5">
+    <if_group>sysmon_event1</if_group>
+    <field name="win.eventdata.commandLine" type="pcre2">SOC_LAB_PHASE3_TEST</field>
+    <description>SOC LAB: Controlled PowerShell marker detected via Sysmon</description>
     <group>soc_lab,sysmon_test,</group>
+  </rule>
+</group>
   </rule>
 </group>
