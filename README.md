@@ -136,6 +136,8 @@ The processor prints each pending finding with an integer `id`. A finding remain
 
 Six additional [outbox tests](tests/test_phase5_checkpoint.py) cover restart recovery, replay without duplicates, acknowledgement persistence, invalid acknowledgment, identifier redaction, and compatibility with older checkpoints. **Verified locally on 8 November 2026: 50/50 tests passed, 0 failures, in 0.227 seconds.** Manual outbox review and acknowledgment remain to be validated.
 
+**Manual outbox lifecycle validation (8 November 2026): PASS.** A fresh synthetic checkpoint processed rules `100133` and `100134` into one pending finding (`id=1`, `delta_seconds=0.197`). A separate `--pending` execution returned the same finding. After `--ack 1`, a subsequent `--pending` returned no findings. This demonstrates controlled pending/replay/acknowledgment behavior, not concurrent-writer safety or exactly-once delivery.
+
 ## Architecture
 
 ```mermaid
