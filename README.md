@@ -2,7 +2,22 @@
 
 **A defensive cybersecurity portfolio project** built around Wazuh SIEM, Windows endpoint telemetry, safe synthetic test data, reproducible detection rules, and analyst-style investigations.
 
-> **Status (8 November 2026): Phases 1–4 validated in a controlled lab.** Phase 1 covers synthetic detections; Phase 2 covers genuine Windows security telemetry; Phase 3 covers Sysmon process creation and encoded PowerShell rules; Phase 4 covers investigative triage, Sysmon FileCreate detection, same-process attribution, and an **offline** Python correlation engine. The full local suite passed **25/25 tests**. No real attack or compromise occurred.
+> **Portfolio release candidate — all five planned phases validated.** The final local regression suite passed **59/59 tests** (0 failures, 0.195 seconds). Controlled tests also validated real Windows telemetry, live alert correlation, checkpoint recovery, durable outbox acknowledgment, single-writer locking and operator-assisted log rotation. **This is a defensive lab prototype, not a production SOC service or evidence of an actual compromise.**
+
+## At a glance
+
+| Component | Demonstrated capability |
+| --- | --- |
+| Detection engineering | Custom Wazuh XML rules for Windows authentication and Sysmon process/file events |
+| Threat hunting | Benign versus suspicious-looking PowerShell, rule tuning and five documented investigations |
+| Event correlation | Same-agent + same-ProcessGuid correlation between rules `100133` and `100134` |
+| Live monitoring | Read-only Python NDJSON monitor validated on real Wazuh alerts |
+| Reliability prototypes | Restart checkpoints, durable pending findings, single-writer lock and explicit retained-log handoff |
+| Quality evidence | **59 automated tests passed** plus controlled manual scenario validation |
+
+**Quick verification:** `py -3 -m unittest discover -s tests -v` from the repository root. The [detection validation matrix](docs/detection-validation.md) distinguishes observed results, synthetic simulations and untested scenarios.
+
+**Portfolio boundaries:** The live streaming monitor is session-only; the separate checkpoint processor runs on local snapshots or explicitly ordered retained segments. They are **not integrated into one unattended, self-healing service**. No automatic log rotation discovery, long-running throughput guarantee, endpoint containment or exactly-once external delivery is claimed.
 
 ## Why this project exists
 
@@ -110,17 +125,17 @@ The new [incremental correlator](tools/sysmon_stream.py) retains matching `10013
 cmd.exe /d /c "docker exec single-node-wazuh.manager-1 tail -n 0 -F /var/ossec/logs/alerts/alerts.json | py -3 -u -m tools.phase5_monitor"
 ```
 
-**Live validation:** Wazuh indexed rules `100133` and `100134` for a harmless test; the streaming monitor generated **one sanitized finding** with `delta_seconds: 0.189`, `guid_match: true`, and `agent_match: true`. Direct piping with Windows PowerShell had shown no findings; using `cmd.exe` to host the native Docker→Python pipe successfully delivered live events. Restart recovery, persistent checkpoints and long-running reliability remain untested.
+**Live validation:** Wazuh indexed rules `100133` and `100134` for a harmless test; the streaming monitor generated **one sanitized finding** with `delta_seconds: 0.189`, `guid_match: true`, and `agent_match: true`. Direct piping with Windows PowerShell had shown no findings; using `cmd.exe` to host the native Docker→Python pipe successfully delivered live events. **This live-stream CLI remains session-only**; persistence and segment handoff were validated separately in the snapshot checkpoint CLI. Continuous unattended reliability remains untested.
 
 ### Step 3 — Restart-safe snapshot replay prototype (controlled test passed)
 
 The [checkpoint prototype](tools/phase5_checkpoint.py) reads a **local snapshot** of Wazuh `alerts.json`, replays an append-only log from the beginning, verifies its prior prefix against a rolling SHA-256 digest, and atomically writes progress and pseudonymized correlation state to a separate checkpoint. It fails closed if the source is truncated or a previously processed line changes. Raw usernames, hostnames, GUIDs, and commands are **not saved in the checkpoint**; only a secret key and HMAC-pseudonymized agent/process identities remain. Seven [recovery tests](tests/test_phase5_checkpoint.py) cover restart, changed/truncated logs, incomplete lines, sensitive data, checkpoint versions, and duplicate replay.
 
-This is a **bounded snapshot-recovery prototype, not a production tailer or guaranteed exactly-once notification system**: it does not follow new file writes, recover after Wazuh rotation, lock against concurrent monitor processes, or make console printing atomic with checkpoint commits. If interrupted after checkpointing but before printing, a finding may be lost from console output. A local snapshot includes sensitive raw alerts and must remain outside the public Git repository. For a controlled test, use a sanitized test fixture rather than exporting your raw logs.
+This is a **snapshot-recovery prototype, not a production tailer or an exactly-once notification system**. The later outbox, OS lock and explicit retained-segment features address specific limitations for the cooperating checkpoint CLI, but do not provide automatic rotation discovery or seamless streaming integration. Unacknowledged findings remain in a durable outbox and may be shown again after a restart. Raw source snapshots contain sensitive alerts and must remain outside the public Git repository. Use sanitized synthetic fixtures for public demonstrations.
 
 To validate code and tests, synchronize GitHub and run `py -3 -m unittest discover -s tests -v`. The local test suite completed successfully on **8 November 2026: 44/44 tests PASS, 0 failures, in 0.042 seconds** (37 existing + 7 checkpoint tests). The operator also completed a manual three-run synthetic restart test: the first run saved a pending `100133` event with no output; a second run restored the checkpoint and correlated a newly appended `100134` event into **one sanitized finding** (`delta_seconds: 0.197`); a third replay of the unchanged source emitted **zero duplicate findings**. **PASS — controlled snapshot checkpoint/restart behavior**, not production crash recovery.
 
-### Step 4 — Durable findings outbox (prototype, pending tests)
+### Step 4 — Durable findings outbox (manual test passed)
 
 The [checkpoint processor](tools/phase5_checkpoint.py) now commits **sanitized findings to a local pending outbox in the same atomic state-file replacement as the input cursor and correlation state**. After restarting, unacknowledged findings can be listed again. Explicit acknowledgment deletes only the selected pending finding; the tool does **not** automatically acknowledge when it prints. Existing version-1 checkpoints without an outbox remain readable.
 
@@ -132,23 +147,23 @@ py -3 -m tools.phase5_checkpoint --pending --state C:\SOC-Lab\phase5-checkpoint-
 py -3 -m tools.phase5_checkpoint --ack 1 --state C:\SOC-Lab\phase5-checkpoint-demo.state.json
 ```
 
-The processor prints each pending finding with an integer `id`. A finding remains pending across restarts until explicitly acknowledged. **Only acknowledge a finding after verifying it was recorded by the intended downstream analyst or system**. If the process crashes after saving but before the output reaches its consumer, the finding will be shown again: **at-least-once review is possible, but duplicates must be handled downstream**. Console output, an external notification, and acknowledgment are not one atomic transaction. The prototype does not yet prevent simultaneous writers or support log rotation. Restrict local checkpoint access, as it contains secret pseudonymization key material.
+The processor prints each pending finding with an integer `id`. A finding remains pending across restarts until explicitly acknowledged. **Only acknowledge a finding after verifying it was recorded by the intended downstream analyst or system**. If the process crashes after saving but before the output reaches its consumer, the finding will be shown again: **at-least-once review is possible, but duplicates must be handled downstream**. Console output, an external notification, and acknowledgment are not one atomic transaction. The later checkpoint CLI sections describe single-writer locking and manually supplied retained-log segments; automatic rotation discovery remains unsupported. Restrict local checkpoint access, as it contains secret pseudonymization key material.
 
-Six additional [outbox tests](tests/test_phase5_checkpoint.py) cover restart recovery, replay without duplicates, acknowledgement persistence, invalid acknowledgment, identifier redaction, and compatibility with older checkpoints. **Verified locally on 8 November 2026: 50/50 tests passed, 0 failures, in 0.227 seconds.** Manual outbox review and acknowledgment remain to be validated.
+Six additional [outbox tests](tests/test_phase5_checkpoint.py) cover restart recovery, replay without duplicates, acknowledgement persistence, invalid acknowledgment, identifier redaction, and compatibility with older checkpoints. **Verified locally on 8 November 2026: 50/50 tests passed, 0 failures, in 0.227 seconds.** Manual outbox review and acknowledgment subsequently passed in the controlled synthetic test described below.
 
 **Manual outbox lifecycle validation (8 November 2026): PASS.** A fresh synthetic checkpoint processed rules `100133` and `100134` into one pending finding (`id=1`, `delta_seconds=0.197`). A separate `--pending` execution returned the same finding. After `--ack 1`, a subsequent `--pending` returned no findings. This demonstrates controlled pending/replay/acknowledgment behavior, not concurrent-writer safety or exactly-once delivery.
 
-### Step 5 — Checkpoint single-writer lock (prototype, pending local tests)
+### Step 5 — Checkpoint single-writer lock (manual test passed)
 
 The checkpoint CLI now acquires a **non-blocking operating-system file lock** on `<state>.lock` before loading any saved checkpoint data. The lock stays held while reading the source, committing updated state, listing findings, or acknowledging a finding. A second CLI process targeting the same checkpoint **fails immediately** with `checkpoint is in use by another process`, rather than overwriting state loaded by the first. The lock is released automatically when the process exits or crashes; the `.lock` file intentionally remains on disk and **must not be manually deleted**.
 
 The lock uses Windows byte-range locking (`msvcrt`) on Windows and `flock` on POSIX. It protects **cooperating CLI users on a local filesystem**; code that directly instantiates `SnapshotCheckpoint` without acquiring the lock is **not guarded**. It is not a distributed lock, and network filesystem behavior has not been validated.
 
-Three [cross-process regression tests](tests/test_checkpoint_lock.py) check contention, release/reacquisition, and abnormal process exit. **Verified locally: 53/53 tests passed, 0 failures, in 0.168 seconds.** Manual two-terminal contention validation remains pending.
+Three [cross-process regression tests](tests/test_checkpoint_lock.py) check contention, release/reacquisition, and abnormal process exit. **Verified locally: 53/53 tests passed, 0 failures, in 0.168 seconds.** Manual two-terminal contention validation subsequently passed, as described below.
 
 **Manual Windows two-terminal lock validation: PASS.** While one process held the checkpoint lock, a second CLI attempt returned `checkpoint is in use by another process`. After the first process released the lock, the same CLI query completed without an error and returned no pending findings, consistent with the previously acknowledged synthetic finding. This confirms cooperative single-writer locking for the tested local Windows setup; it is not evidence of distributed or uncooperative-access safety.
 
-### Final development milestone — Explicit log rotation handoff (pending local tests)
+### Final development milestone — Explicit log rotation handoff (manual test passed)
 
 The checkpoint CLI now supports ordered **retained log segments** (plain JSONL and gzip-compressed `.gz` archives) using `--segments`. The first segment must contain the **entire verified historical prefix**, followed by later segments in chronological order, with no overlaps or gaps. The processor hashes the concatenated raw lines and **rejects missing, modified, reordered, duplicate-path or incomplete inputs** instead of resetting the cursor. Correlation state and pending findings persist across the handoff.
 
@@ -158,9 +173,11 @@ Example for **synthetic files only**, stored outside the repository:
 py -3 -m tools.phase5_checkpoint --segments C:\SOC-Lab\phase5-rotated.jsonl C:\SOC-Lab\phase5-active.jsonl --state C:\SOC-Lab\phase5-rotation.state.json
 ```
 
-This is **operator-supplied rotation recovery**, not automatic detection, seamless tailing or an unattended Wazuh service. Retain old segments: if the earliest processed history is missing, recovery **fails closed**. File list/order must be provided correctly, and snapshot files should not change while being read. Do **not** upload raw logs, checkpoint files or host identifiers to GitHub. Six [rotation tests](tests/test_log_segments.py) cover cross-segment correlation, compressed archives, missing/tampered history, duplicate paths and incomplete segments. **Verified locally: 59/59 tests passed, 0 failures, in 0.195 seconds.** Manual synthetic rotation handoff remains to be validated.
+This is **operator-supplied rotation recovery**, not automatic detection, seamless tailing or an unattended Wazuh service. Retain old segments: if the earliest processed history is missing, recovery **fails closed**. File list/order must be provided correctly, and snapshot files should not change while being read. Do **not** upload raw logs, checkpoint files or host identifiers to GitHub. Six [rotation tests](tests/test_log_segments.py) cover cross-segment correlation, compressed archives, missing/tampered history, duplicate paths and incomplete segments. **Verified locally: 59/59 tests passed, 0 failures, in 0.195 seconds.** Manual synthetic rotation handoff subsequently passed, as described below.
 
-After this milestone, development is frozen for the portfolio `v1.0.0` documentation, security/privacy review and release preparation.
+**Manual rotation validation: PASS.** A synthetic `100133` alert was checkpointed in the initial file, which was then renamed as an archive. A new active file contained matching `100134` telemetry. The CLI accepted the ordered archive and active segments, produced **one pending finding** (`id=1`, `delta_seconds=0.197`), and displayed the **same pending ID** on replay without creating a duplicate.
+
+After this milestone, feature development is frozen for the portfolio `v1.0.0` documentation, security/privacy review and release preparation.
 
 ## Architecture
 
