@@ -118,7 +118,7 @@ The [checkpoint prototype](tools/phase5_checkpoint.py) reads a **local snapshot*
 
 This is a **bounded snapshot-recovery prototype, not a production tailer or guaranteed exactly-once notification system**: it does not follow new file writes, recover after Wazuh rotation, lock against concurrent monitor processes, or make console printing atomic with checkpoint commits. If interrupted after checkpointing but before printing, a finding may be lost from console output. A local snapshot includes sensitive raw alerts and must remain outside the public Git repository. For a controlled test, use a sanitized test fixture rather than exporting your raw logs.
 
-To validate code and tests, synchronize GitHub and run `py -3 -m unittest discover -s tests -v`. The expected total is **44 tests** (37 existing + 7 new). Do not assume these tests have passed until verified on the local machine.
+To validate code and tests, synchronize GitHub and run `py -3 -m unittest discover -s tests -v`. The local test suite completed successfully on **8 November 2026: 44/44 tests PASS, 0 failures, in 0.042 seconds** (37 existing + 7 checkpoint tests). This validates unit-test scenarios, not production recovery behavior.
 
 ## Architecture
 
