@@ -66,6 +66,14 @@ The UTF-16LE Base64 payload corresponds to `Get-Date; [Environment]::OSVersion.V
 
 **Tuning decision:** leave the deployed rule unchanged for now. Next, compare a narrowly scoped known-benign test against broader risky activity before designing any exception or priority adjustment.
 
+## Sysmon file-creation telemetry and rule 100134
+
+The operator enabled a narrowly scoped Sysmon FileCreate filter for a dedicated lab evidence file. At **2026-11-08 22:56:06 CET**, local Sysmon Event ID `11` was observed after a harmless PowerShell `Set-Content` test. A local join of Sysmon process-creation Event ID `1` and FileCreate Event ID `11` on `ProcessGuid` returned **`powershell.exe`, GUID match `True` (PASS)**.
+
+The original Event ID `11` was not found as an alert in Wazuh Threat Hunting, so the operator installed narrowly scoped custom rule **`100134`**, level **5**, for the lab file. After generating a new file event, Wazuh indexed a matching alert at **2026-11-08 23:00:56 CET**, based on Sysmon Event ID `11` at **23:00:55 CET**. This validates agent-to-manager alerting for the new event type and rule. The alert identifies a PowerShell image and controlled test target; it does **not** by itself constitute cross-event correlation in the SIEM. The reported Sysmon `CreationUtcTime` can refer to the file's initial creation timestamp and should not be confused with the current event timestamp.
+
+**Disposition:** Controlled benign tests; no incident escalation. Public evidence excludes raw event payloads, user/host names, full process GUIDs, and screenshots. The rule source is published as [`rules/sysmon_file_rules.xml`](../rules/sysmon_file_rules.xml).
+
 ## Privacy and evidence handling
 
 The original Wazuh event contains private user, host, path, process and logon identifiers. Only manually selected sanitized fields and process basenames are published in this report; no original screenshots, full events, or personal identifiers are included.
