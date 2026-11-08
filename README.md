@@ -138,6 +138,14 @@ Six additional [outbox tests](tests/test_phase5_checkpoint.py) cover restart rec
 
 **Manual outbox lifecycle validation (8 November 2026): PASS.** A fresh synthetic checkpoint processed rules `100133` and `100134` into one pending finding (`id=1`, `delta_seconds=0.197`). A separate `--pending` execution returned the same finding. After `--ack 1`, a subsequent `--pending` returned no findings. This demonstrates controlled pending/replay/acknowledgment behavior, not concurrent-writer safety or exactly-once delivery.
 
+### Step 5 — Checkpoint single-writer lock (prototype, pending local tests)
+
+The checkpoint CLI now acquires a **non-blocking operating-system file lock** on `<state>.lock` before loading any saved checkpoint data. The lock stays held while reading the source, committing updated state, listing findings, or acknowledging a finding. A second CLI process targeting the same checkpoint **fails immediately** with `checkpoint is in use by another process`, rather than overwriting state loaded by the first. The lock is released automatically when the process exits or crashes; the `.lock` file intentionally remains on disk and **must not be manually deleted**.
+
+The lock uses Windows byte-range locking (`msvcrt`) on Windows and `flock` on POSIX. It protects **cooperating CLI users on a local filesystem**; code that directly instantiates `SnapshotCheckpoint` without acquiring the lock is **not guarded**. It is not a distributed lock, and network filesystem behavior has not been validated.
+
+Three [cross-process regression tests](tests/test_checkpoint_lock.py) check contention, release/reacquisition, and abnormal process exit. **Expected local suite: 53 tests (previous 50 plus 3), pending verification.**
+
 ## Architecture
 
 ```mermaid
