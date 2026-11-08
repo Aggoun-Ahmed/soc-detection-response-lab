@@ -192,7 +192,7 @@ Do **not** commit credentials, generated certificates, actual corporate logs or 
 - [`scripts/ingest-events.ps1`](scripts/ingest-events.ps1): feed synthetic telemetry.
 - [`tests/`](tests/): automated checks.
 - [`docs/threat-model.md`](docs/threat-model.md): scope and assumptions.
-- [`docs/detection-validation.md`](docs/detection-validation.md): validation checklist (historical checklist; not yet updated with these observed results).
+- [`docs/detection-validation.md`](docs/detection-validation.md): validation matrix for both completed phases and outstanding negative tests.
 - [`investigations/INC-001-brute-force-simulation.md`](investigations/INC-001-brute-force-simulation.md): authentication-correlation case study.
 - [`investigations/INC-002-powershell-simulation.md`](investigations/INC-002-powershell-simulation.md): suspicious PowerShell telemetry case study.
 - [`screenshots/`](screenshots/): Wazuh Threat Hunting evidence from Phase 1.
