@@ -98,17 +98,19 @@ Phase 4 investigated suspicious-looking PowerShell activity in a known-benign la
 
 **Privacy:** Phase 4 publishes no raw endpoint event dumps, screenshots, usernames, hostnames or process GUIDs. See [INC-005 — process-chain triage and correlation](investigations/INC-005-process-chain-triage.md), [file creation rule](rules/sysmon_file_rules.xml), and the [validation matrix](docs/detection-validation.md).
 
-## Phase 5 — Read-only incremental monitoring (prototype, pending local validation)
+## Phase 5 — Read-only incremental monitoring (live test validated)
 
 The new [incremental correlator](tools/sysmon_stream.py) retains matching `100133` and `100134` alerts across incoming batches in **memory only**, using agent ID, ProcessGuid, event timestamps, a 60-second match window and bounded out-of-order handling. It suppresses duplicate findings within the retained window, expires old state, and fails with an error instead of silently discarding alerts when the configured key limit is exceeded. The [NDJSON monitor](tools/phase5_monitor.py) consumes alert lines from standard input and emits **sanitized findings only**. Twelve [regression tests](tests/test_sysmon_stream.py) cover positive and negative joins, duplicates, ordering, malformed alerts, privacy, expiration, and capacity.
 
-**Status:** Local full test suite **37/37 PASS** on 8 November 2026 (0 failures, 0.007 seconds); live-stream validation **not yet performed**. This monitor is session-scoped (no persisted offset or checkpoint). Restarting it clears correlation and deduplication state; out-of-order events beyond the configured lateness may be missed, and a long idle period does not by itself expire state. It does not modify Wazuh configuration, contain endpoints, or send notifications.
+**Status:** Local full test suite **37/37 PASS** on 8 November 2026 (0 failures, 0.007 seconds); controlled live-stream correlation **PASS** (one sanitized finding, 0.189-second separation). This monitor is session-scoped (no persisted offset or checkpoint). Restarting it clears correlation and deduplication state; out-of-order events beyond the configured lateness may be missed, and a long idle period does not by itself expire state. It does not modify Wazuh configuration, contain endpoints, or send notifications.
 
 **Read-only streaming test** (run from repository root and stop with Ctrl+C):
 
 ```powershell
-docker exec single-node-wazuh.manager-1 tail -n 0 -F /var/ossec/logs/alerts/alerts.json | py -3 -m tools.phase5_monitor
+cmd.exe /d /c "docker exec single-node-wazuh.manager-1 tail -n 0 -F /var/ossec/logs/alerts/alerts.json | py -3 -u -m tools.phase5_monitor"
 ```
+
+**Live validation:** Wazuh indexed rules `100133` and `100134` for a harmless test; the streaming monitor generated **one sanitized finding** with `delta_seconds: 0.189`, `guid_match: true`, and `agent_match: true`. Direct piping with Windows PowerShell had shown no findings; using `cmd.exe` to host the native Docker→Python pipe successfully delivered live events. Restart recovery, persistent checkpoints and long-running reliability remain untested.
 
 ## Architecture
 
