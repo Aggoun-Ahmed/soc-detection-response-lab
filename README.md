@@ -158,7 +158,7 @@ Example for **synthetic files only**, stored outside the repository:
 py -3 -m tools.phase5_checkpoint --segments C:\SOC-Lab\phase5-rotated.jsonl C:\SOC-Lab\phase5-active.jsonl --state C:\SOC-Lab\phase5-rotation.state.json
 ```
 
-This is **operator-supplied rotation recovery**, not automatic detection, seamless tailing or an unattended Wazuh service. Retain old segments: if the earliest processed history is missing, recovery **fails closed**. File list/order must be provided correctly, and snapshot files should not change while being read. Do **not** upload raw logs, checkpoint files or host identifiers to GitHub. Six [rotation tests](tests/test_log_segments.py) cover cross-segment correlation, compressed archives, missing/tampered history, duplicate paths and incomplete segments. **Expected 59 tests (53 previously validated + 6 new); pending local verification.**
+This is **operator-supplied rotation recovery**, not automatic detection, seamless tailing or an unattended Wazuh service. Retain old segments: if the earliest processed history is missing, recovery **fails closed**. File list/order must be provided correctly, and snapshot files should not change while being read. Do **not** upload raw logs, checkpoint files or host identifiers to GitHub. Six [rotation tests](tests/test_log_segments.py) cover cross-segment correlation, compressed archives, missing/tampered history, duplicate paths and incomplete segments. **Verified locally: 59/59 tests passed, 0 failures, in 0.195 seconds.** Manual synthetic rotation handoff remains to be validated.
 
 After this milestone, development is frozen for the portfolio `v1.0.0` documentation, security/privacy review and release preparation.
 
