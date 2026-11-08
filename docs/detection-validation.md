@@ -39,6 +39,8 @@ The following observations were made in the local Wazuh 4.14.10 lab on **7–8 N
 
 | Phase 4: hardened offline correlator unit tests and regression suite | Valid matching, malformed inputs, timestamps, duplicates, out-of-order alerts and 60-second boundaries | 19 correlator tests passed; full local suite **25/25** passed in 0.007 s, 0 failures | PASS — local tests (8 November 2026) | [Correlator](../tools/sysmon_correlator.py) · [Tests](../tests/test_sysmon_correlator.py) |
 
+| Phase 5: read-only live Docker → Python correlation via native CMD pipe | One sanitized finding from real `100133` + `100134` alerts | 1 finding; `delta_seconds=0.189`; matching agent and ProcessGuid; complete local suite 37/37 | PASS — controlled live test, not persistence/recovery | [Phase 5 README](../README.md#phase-5--read-only-incremental-monitoring-live-test-validated) |
+
 **Phase 2 screenshot disclosure:** No screenshots are included for Phase 2 because the real Windows and Wazuh views contained personal system identifiers. The linked INC-003 report uses selected, sanitized, reconstructed alert fields instead; these are not raw evidence exports.
 
 **Phase 3 screenshot disclosure:** The four custom rule matches were confirmed in the dashboard; unredacted images were intentionally omitted because they contain personal device and account identifiers. Only selected validation fields are documented.
