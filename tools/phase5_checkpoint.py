@@ -16,6 +16,7 @@ import sys
 import tempfile
 from datetime import datetime
 
+from tools.checkpoint_lock import checkpoint_lock
 from tools.sysmon_stream import IncrementalCorrelator
 from tools.sysmon_correlator import _object
 
@@ -180,14 +181,16 @@ def main():
         parser.error("--input or --pending or --ack is required")
     if args.input and (args.pending or args.ack is not None):
         parser.error("--input cannot be combined with --pending or --ack")
-    worker = SnapshotCheckpoint(args.state)
-    if args.ack is not None:
-        worker.acknowledge(args.ack)
-        return
-    if args.input:
-        worker.process(args.input)
-    for item in worker.pending_findings():
-        print(json.dumps(item), flush=True)
+    # Hold the lock throughout load, modify, commit and presentation.
+    with checkpoint_lock(args.state):
+        worker = SnapshotCheckpoint(args.state)
+        if args.ack is not None:
+            worker.acknowledge(args.ack)
+            return
+        if args.input:
+            worker.process(args.input)
+        for item in worker.pending_findings():
+            print(json.dumps(item), flush=True)
 
 
 if __name__ == "__main__":
