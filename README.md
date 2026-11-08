@@ -134,7 +134,7 @@ py -3 -m tools.phase5_checkpoint --ack 1 --state C:\SOC-Lab\phase5-checkpoint-de
 
 The processor prints each pending finding with an integer `id`. A finding remains pending across restarts until explicitly acknowledged. **Only acknowledge a finding after verifying it was recorded by the intended downstream analyst or system**. If the process crashes after saving but before the output reaches its consumer, the finding will be shown again: **at-least-once review is possible, but duplicates must be handled downstream**. Console output, an external notification, and acknowledgment are not one atomic transaction. The prototype does not yet prevent simultaneous writers or support log rotation. Restrict local checkpoint access, as it contains secret pseudonymization key material.
 
-Six additional [outbox tests](tests/test_phase5_checkpoint.py) cover restart recovery, replay without duplicates, acknowledgement persistence, invalid acknowledgment, identifier redaction, and compatibility with older checkpoints. **Expected local suite: 50 tests; not yet run for this change.**
+Six additional [outbox tests](tests/test_phase5_checkpoint.py) cover restart recovery, replay without duplicates, acknowledgement persistence, invalid acknowledgment, identifier redaction, and compatibility with older checkpoints. **Verified locally on 8 November 2026: 50/50 tests passed, 0 failures, in 0.227 seconds.** Manual outbox review and acknowledgment remain to be validated.
 
 ## Architecture
 
