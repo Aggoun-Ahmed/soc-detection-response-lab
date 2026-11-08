@@ -148,6 +148,20 @@ Three [cross-process regression tests](tests/test_checkpoint_lock.py) check cont
 
 **Manual Windows two-terminal lock validation: PASS.** While one process held the checkpoint lock, a second CLI attempt returned `checkpoint is in use by another process`. After the first process released the lock, the same CLI query completed without an error and returned no pending findings, consistent with the previously acknowledged synthetic finding. This confirms cooperative single-writer locking for the tested local Windows setup; it is not evidence of distributed or uncooperative-access safety.
 
+### Final development milestone — Explicit log rotation handoff (pending local tests)
+
+The checkpoint CLI now supports ordered **retained log segments** (plain JSONL and gzip-compressed `.gz` archives) using `--segments`. The first segment must contain the **entire verified historical prefix**, followed by later segments in chronological order, with no overlaps or gaps. The processor hashes the concatenated raw lines and **rejects missing, modified, reordered, duplicate-path or incomplete inputs** instead of resetting the cursor. Correlation state and pending findings persist across the handoff.
+
+Example for **synthetic files only**, stored outside the repository:
+
+```powershell
+py -3 -m tools.phase5_checkpoint --segments C:\SOC-Lab\phase5-rotated.jsonl C:\SOC-Lab\phase5-active.jsonl --state C:\SOC-Lab\phase5-rotation.state.json
+```
+
+This is **operator-supplied rotation recovery**, not automatic detection, seamless tailing or an unattended Wazuh service. Retain old segments: if the earliest processed history is missing, recovery **fails closed**. File list/order must be provided correctly, and snapshot files should not change while being read. Do **not** upload raw logs, checkpoint files or host identifiers to GitHub. Six [rotation tests](tests/test_log_segments.py) cover cross-segment correlation, compressed archives, missing/tampered history, duplicate paths and incomplete segments. **Expected 59 tests (53 previously validated + 6 new); pending local verification.**
+
+After this milestone, development is frozen for the portfolio `v1.0.0` documentation, security/privacy review and release preparation.
+
 ## Architecture
 
 ```mermaid
