@@ -44,6 +44,14 @@ This confirms a directly correlated immediate parent-child pair **for the fresh 
 
 Evaluate how collected parent-child context should affect rule severity and triage, and add more targeted negative tests if needed. Avoid publishing raw process GUIDs, user identities, or full event exports.
 
+## Detection overlap and severity tuning assessment
+
+A Wazuh Threat Hunting screenshot on 8 November 2026 showed **7 selected matching alerts**: three built-in `92057` (level 12), three custom `100132` (level 8), and one custom `100133` (level 10). One `92057` event occurred at **22:13:16 CET**, preceding the originally intended 22:15–22:45 CET hunting window. Therefore, **6 of these 7** fall within that narrower interval (two `92057`, three `100132`, one `100133`).
+
+These results show useful distinctions among process contexts and rule conditions in the controlled sample. They do not establish the absence of rule overlap in other conditions or a production false-positive rate. The earlier local telemetry summary included 11 PowerShell process-creation events, all at High integrity, including ordinary commands; elevated integrity alone therefore did not distinguish suspicious behavior in this sample.
+
+**Tuning decision:** retain current severity levels (`100132` level 8 and `100133` level 10) pending a broader benign baseline and scenario coverage. Treat each alert as an investigation indicator, not a confirmed attack, and prioritize parent process, decoded command content, user context, and corroborating telemetry before escalation. No live rules were modified during this assessment.
+
 ## Privacy and evidence handling
 
 The original Wazuh event contains private user, host, path, process and logon identifiers. Only manually selected sanitized fields and process basenames are published in this report; no original screenshots, full events, or personal identifiers are included.
