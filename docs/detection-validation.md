@@ -33,6 +33,8 @@ The following observations were made in the local Wazuh 4.14.10 lab on **7–8 N
 
 | Phase 4: real Wazuh same-process correlation positive test | `100133` and `100134` must share agent and ProcessGuid within 60 s | Indexed Sysmon events at 23:13:36.348 and 23:13:36.545 CET, identical ProcessGuid, 197 ms apart; file content confirmed | PASS — manual correlation; Python end-to-end pending | [INC-005](../investigations/INC-005-process-chain-triage.md) |
 
+| Phase 4: Python correlator on real Wazuh alert pair | One finding for `100133` then `100134` with matching agent/ProcessGuid inside 60 seconds | 2 real alert inputs → 1 sanitized finding, matching agent/GUID, 0.197 s separation | PASS — offline end-to-end | [INC-005](../investigations/INC-005-process-chain-triage.md) |
+
 **Phase 2 screenshot disclosure:** No screenshots are included for Phase 2 because the real Windows and Wazuh views contained personal system identifiers. The linked INC-003 report uses selected, sanitized, reconstructed alert fields instead; these are not raw evidence exports.
 
 **Phase 3 screenshot disclosure:** The four custom rule matches were confirmed in the dashboard; unredacted images were intentionally omitted because they contain personal device and account identifiers. Only selected validation fields are documented.
