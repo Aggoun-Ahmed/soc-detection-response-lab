@@ -24,6 +24,9 @@ The following observations were made in the local Wazuh 4.14.10 lab on **7–8 N
 
 | Phase 4: benign encoded administrative-style command | Rule `100133` expected; known authorized test | `100133` (level 10), Sysmon Event ID 1 at 2026-11-08 22:52:41 CET | PASS — demonstrates signature matches benign automation too | [INC-005](../investigations/INC-005-process-chain-triage.md) |
 
+| Phase 4: Sysmon Event ID 11 and local EID 1↔11 GUID join | Correlate PowerShell ProcessCreate and FileCreate | `powershell.exe`, matching `ProcessGuid`: True; file creation 2026-11-08 22:56:06 CET | PASS | [INC-005](../investigations/INC-005-process-chain-triage.md) |
+| Phase 4: Wazuh custom FileCreate detection | New controlled FileCreate event triggers `100134` level 5 | `100134` level 5, Event ID 11, 2026-11-08 23:00:55 CET | PASS | [File rule](../rules/sysmon_file_rules.xml) |
+
 **Phase 2 screenshot disclosure:** No screenshots are included for Phase 2 because the real Windows and Wazuh views contained personal system identifiers. The linked INC-003 report uses selected, sanitized, reconstructed alert fields instead; these are not raw evidence exports.
 
 **Phase 3 screenshot disclosure:** The four custom rule matches were confirmed in the dashboard; unredacted images were intentionally omitted because they contain personal device and account identifiers. Only selected validation fields are documented.
