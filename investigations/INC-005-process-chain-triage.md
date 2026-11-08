@@ -74,6 +74,12 @@ The original Event ID `11` was not found as an alert in Wazuh Threat Hunting, so
 
 **Disposition:** Controlled benign tests; no incident escalation. Public evidence excludes raw event payloads, user/host names, full process GUIDs, and screenshots. The rule source is published as [`rules/sysmon_file_rules.xml`](../rules/sysmon_file_rules.xml).
 
+## SIEM-side process attribution confirmed
+
+Both corresponding alerts were located in the Wazuh alert index for the controlled **2026-11-08 23:00:55 CET** execution. The built-in **`92027`** alert (level 4) contains Sysmon ProcessCreate Event ID **1** for `powershell.exe` at **23:00:55.056 CET**; the custom **`100134`** alert (level 5) contains FileCreate Event ID **11** at **23:00:55.234 CET**. The analyst verified that both events have the **same `data.win.eventdata.processGuid`**, establishing a common originating PowerShell process. The file event followed process creation by **178 ms**.
+
+**Result: PASS — manual analyst correlation across two Wazuh alerts.** This establishes event attribution, not a new single automatic Wazuh correlation alert and not evidence of maliciousness. The associated activity was a controlled harmless lab file write. No process GUID, account identifiers, hostname, screenshot, or raw event was committed.
+
 ## Privacy and evidence handling
 
 The original Wazuh event contains private user, host, path, process and logon identifiers. Only manually selected sanitized fields and process basenames are published in this report; no original screenshots, full events, or personal identifiers are included.
