@@ -92,6 +92,19 @@ The operator executed a controlled benign PowerShell `-NoProfile -NonInteractive
 
 The two indexed alerts contain identical **`data.win.eventdata.processGuid`** values and agent ID `001`. The events are separated by **197 ms**, within the prototype 60-second interval. **PASS: real SIEM alert pair provides positive-test input for the offline correlator.** The operator has not yet run these two alert records through the Python correlator; therefore this is a verified manual join, not a verified programmatic end-to-end finding. Activity remains known-benign laboratory simulation, not compromise.
 
+## Offline correlator validation with actual Wazuh alerts — PASS
+
+The operator queried the local Wazuh manager's `alerts.json`, filtering for rules `100133` and `100134` and the controlled **2026-11-08 23:13:36 CET** execution. Exactly **2** real alerts matched. The pair was processed locally with `tools.sysmon_correlator.correlate`, producing **1** sanitized finding:
+
+- Finding: `encoded_powershell_followed_by_lab_file_create`
+- Matched rules: `100133` and `100134`
+- Same process GUID: **true**
+- Same agent: **true**
+- Elapsed time: **0.197 seconds** (within 60-second correlation window)
+- Triage priority: `investigate`, **not** a confirmed malicious incident
+
+**Result: PASS — full offline pipeline from real Windows Sysmon events through Wazuh alerts to a locally generated correlation finding.** No original Wazuh alerts, usernames, hostnames, GUIDs, or system paths were published. Continuous/live deployment and real-event negative-control testing remain out of scope for this result.
+
 ## Privacy and evidence handling
 
 The original Wazuh event contains private user, host, path, process and logon identifiers. Only manually selected sanitized fields and process basenames are published in this report; no original screenshots, full events, or personal identifiers are included.
